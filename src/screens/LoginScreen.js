@@ -12,6 +12,7 @@ import {
     ActivityIndicator,
     Image,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { signIn, signUp, signInWithGoogle } from '../services/authService';
 import { colors, spacing, typography, borderRadius, shadows } from '../styles/theme';
 
@@ -174,11 +175,7 @@ const LoginScreen = ({ onLoginSuccess }) => {
                         onPress={handleGoogleLogin}
                         disabled={loading}
                     >
-                        <Image
-                            source={require('../../assets/google_logo.png')}
-                            style={styles.googleIcon}
-                            resizeMode="contain"
-                        />
+                        <Ionicons name="logo-google" size={24} color="#4285F4" />
                         <Text style={styles.googleButtonText}>Sign in with Google</Text>
                     </TouchableOpacity>
 
