@@ -175,7 +175,7 @@ const LoginScreen = ({ onLoginSuccess }) => {
                         disabled={loading}
                     >
                         <Image
-                            source={require('../../assets/google-logo.png')}
+                            source={require('../../assets/google_logo.png')}
                             style={styles.googleIcon}
                             resizeMode="contain"
                         />
