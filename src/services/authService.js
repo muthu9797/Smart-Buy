@@ -1,4 +1,9 @@
 import { supabase } from '../../supabase.config';
+import * as WebBrowser from 'expo-web-browser';
+import * as QueryParams from 'expo-auth-session/build/QueryParams';
+import { makeRedirectUri } from 'expo-auth-session';
+
+WebBrowser.maybeCompleteAuthSession(); // Required for web redirect
 
 /**
  * Sign up a new user with email and password
@@ -41,6 +46,62 @@ export const signIn = async (email, password) => {
         return { success: true, user: data.user };
     } catch (error) {
         console.error('Sign in error:', error);
+        return { success: false, error: error.message };
+    }
+};
+
+/**
+ * Sign in with Google (OAuth)
+ */
+export const signInWithGoogle = async () => {
+    try {
+        const redirectUrl = makeRedirectUri({
+            path: 'auth/callback',
+        });
+        console.log('Google Sign-In Redirect URL:', redirectUrl); // DEBUG LOG
+
+        // 1. Start the OAuth flow with Supabase
+        const { data, error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: redirectUrl,
+                skipBrowserRedirect: true,
+                queryParams: {
+                    access_type: 'offline',
+                    prompt: 'consent',
+                },
+            },
+        });
+
+        if (error) throw error;
+
+        // 2. Open the browser
+        const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
+
+        // 3. Handle redirect
+        if (result.type === 'success') {
+            const { url } = result;
+            const { params, errorCode } = QueryParams.getQueryParams(url);
+
+            if (errorCode) throw new Error(errorCode);
+
+            const { access_token, refresh_token } = params;
+
+            if (!access_token) return { success: false, error: 'No access token found' };
+
+            const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+                access_token,
+                refresh_token,
+            });
+
+            if (sessionError) throw sessionError;
+
+            return { success: true, user: sessionData.user };
+        }
+
+        return { success: false, error: 'Sign in cancelled' };
+    } catch (error) {
+        console.error('Google Sign in error:', error);
         return { success: false, error: error.message };
     }
 };
@@ -185,8 +246,22 @@ export const updateUserProfile = async (userId, updates) => {
  * Listen to authentication state changes
  */
 export const onAuthChange = (callback) => {
+    // 1. Get initial session immediately
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+        if (error) {
+            console.error('Error getting session:', error);
+            callback(null);
+        } else {
+            // Only callback if we have a session, otherwise wait for auth listener?
+            // Actually, we should callback(null) if nosession so loading stops.
+            callback(session?.user || null);
+        }
+    });
+
+    // 2. Listen for future changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
         (event, session) => {
+            console.log('Auth State Change:', event, session?.user?.email);
             callback(session?.user || null);
         }
     );

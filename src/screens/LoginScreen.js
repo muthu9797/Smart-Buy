@@ -12,7 +12,7 @@ import {
     ActivityIndicator,
     Image,
 } from 'react-native';
-import { signIn, signUp } from '../services/authService';
+import { signIn, signUp, signInWithGoogle } from '../services/authService';
 import { colors, spacing, typography, borderRadius, shadows } from '../styles/theme';
 
 const LoginScreen = ({ onLoginSuccess }) => {
@@ -50,6 +50,24 @@ const LoginScreen = ({ onLoginSuccess }) => {
                     onLoginSuccess(result.user);
                 } else {
                     Alert.alert('Sign Up Failed', result.error);
+                }
+            }
+        } catch (error) {
+            Alert.alert('Error', error.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleGoogleLogin = async () => {
+        setLoading(true);
+        try {
+            const result = await signInWithGoogle();
+            if (result.success) {
+                onLoginSuccess(result.user);
+            } else {
+                if (result.error !== 'Sign in cancelled') {
+                    Alert.alert('Google Login Failed', result.error);
                 }
             }
         } catch (error) {
@@ -146,6 +164,15 @@ const LoginScreen = ({ onLoginSuccess }) => {
                                 {isLogin ? 'Login' : 'Sign Up'}
                             </Text>
                         )}
+                    </TouchableOpacity>
+
+                    {/* Google Login Button */}
+                    <TouchableOpacity
+                        style={[styles.googleButton, loading && styles.submitButtonDisabled]}
+                        onPress={handleGoogleLogin}
+                        disabled={loading}
+                    >
+                        <Text style={styles.googleButtonText}>Sign in with Google</Text>
                     </TouchableOpacity>
 
                     {/* Toggle Login/Signup */}
@@ -262,6 +289,21 @@ const styles = StyleSheet.create({
     },
     submitButtonText: {
         color: colors.surface,
+        fontSize: typography.fontSizeMedium,
+        fontWeight: typography.fontWeightBold,
+    },
+    googleButton: {
+        backgroundColor: colors.surface,
+        borderRadius: borderRadius.medium,
+        padding: spacing.md,
+        alignItems: 'center',
+        marginTop: spacing.md,
+        borderWidth: 1,
+        borderColor: colors.border,
+        ...shadows.small,
+    },
+    googleButtonText: {
+        color: colors.textPrimary,
         fontSize: typography.fontSizeMedium,
         fontWeight: typography.fontWeightBold,
     },

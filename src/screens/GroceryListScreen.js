@@ -14,7 +14,7 @@ import { StatusBar } from 'expo-status-bar';
 import { MaterialIcons } from '@expo/vector-icons';
 import GroceryItem from '../components/GroceryItem';
 import AddItemModal from '../components/AddItemModal';
-import ListTypeSelectionModal from '../components/ListTypeSelectionModal';
+import ListSelectorModal from '../components/ListSelectorModal';
 import NotificationBadge from '../components/NotificationBadge';
 import ListOptionsModal from '../components/ListOptionsModal';
 import SideMenu from '../components/SideMenu';
@@ -49,10 +49,13 @@ const GroceryListScreen = ({ user, onLogout, navigation }) => {
     const [notificationCount, setNotificationCount] = useState(0);
     const [itemToEdit, setItemToEdit] = useState(null);
     const [selectedCategory, setSelectedCategory] = useState('All');
-    const [listType, setListType] = useState('daily'); // 'daily' or 'monthly'
-    const [listSelectionModalVisible, setListSelectionModalVisible] = useState(false);
+
+    // New List State
+    const [currentList, setCurrentList] = useState({ id: null, name: 'Daily' });
+    const [listSelectorVisible, setListSelectorVisible] = useState(false);
+
     const [optionsModalVisible, setOptionsModalVisible] = useState(false);
-    const [sideMenuVisible, setSideMenuVisible] = useState(false); // New state for side menu
+    const [sideMenuVisible, setSideMenuVisible] = useState(false);
     const [isSelectionMode, setIsSelectionMode] = useState(false);
     const [selectedItemIds, setSelectedItemIds] = useState(new Set());
 
@@ -96,18 +99,33 @@ const GroceryListScreen = ({ user, onLogout, navigation }) => {
         let unsubscribe;
 
         const setupSubscription = () => {
-            if (userProfile) {
-                setLoading(true); // Show loading when switching lists
-                const currentFamilyId = listType === 'daily'
-                    ? userProfile.familyId
-                    : `${userProfile.familyId}-monthly`;
+            if (userProfile?.familyId) {
+                // Initial fetching of lists to set the default currentList if needed
+                const initializeLists = async () => {
+                    const { getLists } = require('../services/groceryService');
+                    const listResult = await getLists(userProfile.familyId);
+                    if (listResult.success && listResult.lists.length > 0) {
+                        // Prefer 'Daily' if exists, else first one
+                        const dailyList = listResult.lists.find(l => l.name === 'Daily');
+                        if (!currentList.id) {
+                            setCurrentList(dailyList || listResult.lists[0]);
+                        }
+                    }
+                };
+
+                if (!currentList.id) {
+                    initializeLists();
+                }
 
                 unsubscribe = subscribeToGroceryList(
-                    currentFamilyId,
-                    handleGroceryListUpdate,
+                    userProfile.familyId,
+                    (updatedItems) => {
+                        setItems(updatedItems);
+                        setLoading(false);
+                        setRefreshing(false);
+                    },
                     (error) => {
-                        Alert.alert('Error', 'Failed to load grocery list');
-                        console.error(error);
+                        // console.error('Subscription error:', error);
                         setLoading(false);
                     }
                 );
@@ -121,7 +139,8 @@ const GroceryListScreen = ({ user, onLogout, navigation }) => {
                 unsubscribe();
             }
         };
-    }, [userProfile, listType]);
+    }, [userProfile?.familyId]);
+
 
     // Helper to get effective family ID
     const getEffectiveFamilyId = () => {
@@ -199,7 +218,7 @@ const GroceryListScreen = ({ user, onLogout, navigation }) => {
             return;
         }
 
-        const familyId = getEffectiveFamilyId();
+        const familyId = userProfile.familyId;
 
         const performAddItem = async () => {
             // Optimistic update
@@ -216,6 +235,7 @@ const GroceryListScreen = ({ user, onLogout, navigation }) => {
                 createdAt: new Date().toISOString(),
                 boughtBy: null,
                 boughtAt: null,
+                listId: currentList.id,
             };
 
             setItems(prev => sortItems([newItem, ...prev]));
@@ -227,7 +247,8 @@ const GroceryListScreen = ({ user, onLogout, navigation }) => {
                 user.id,
                 userProfile.role,
                 userProfile.fullName, // Pass name
-                emoji
+                emoji,
+                currentList.id
             );
 
             console.log('addGroceryItem result:', result);
@@ -383,7 +404,7 @@ const GroceryListScreen = ({ user, onLogout, navigation }) => {
                 : item
         ));
 
-        const familyId = getEffectiveFamilyId();
+        const familyId = userProfile.familyId;
 
         const result = await updateGroceryItem(
             familyId,
@@ -440,22 +461,22 @@ const GroceryListScreen = ({ user, onLogout, navigation }) => {
 
     // Derived state for filtering
     const filteredItems = items.filter(item => {
+        // Filter by List
+        if (currentList.id && item.listId !== currentList.id) return false;
+
         if (selectedCategory === 'All') return true;
         const category = getCategory(item.name);
         return category === selectedCategory;
     });
 
-    const pendingItems = items.filter(item => !item.isBought); // Use original items for count?
-    // Actually, usually headers show stats for the whole list.
-    // If I filter, should stats update? Maybe confusing.
-    // Let's keep stats for the TOTAL list, but show filtered items in list.
-    // Or maybe show counts of filtered items?
-    // User said "Filter the grocery list", usually implies viewing a subset.
-    // Let's keep the global stats (Pending/Bought/Total) as is, so they know what's in the DB.
-    // But the list below shows filtered.
+    // Filter items by Current List for stats
+    const currentListItems = items.filter(item => {
+        if (currentList.id && item.listId !== currentList.id) return false;
+        return true;
+    });
 
-    const pendingFilteredItems = filteredItems.filter(item => !item.isBought);
-    const boughtFilteredItems = filteredItems.filter(item => item.isBought);
+    const pendingItems = currentListItems.filter(item => !item.isBought);
+    const boughtItems = currentListItems.filter(item => item.isBought);
 
     // Get all unique categories from the items present in the list + 'All'
     // Actually better to show ALL available categories or just the ones in the list?
@@ -463,13 +484,11 @@ const GroceryListScreen = ({ user, onLogout, navigation }) => {
     // But also might want 'Vegetables' even if empty to quickly check? 
     // Usually "Filter by..." implies filtering existing data. 
     // Let's compute categories from `items`.
-    const availableCategories = ['All', ...new Set(items.map(item => getCategory(item.name)))].sort();
+    const availableCategories = ['All', ...new Set(currentListItems.map(item => getCategory(item.name)))].sort();
     // But wait, "Other" might be last. And "All" first.
     // Let's separate 'All' and sort the rest.
-    const uniqueCategories = [...new Set(items.map(item => getCategory(item.name)))].sort();
+    const uniqueCategories = [...new Set(currentListItems.map(item => getCategory(item.name)))].sort();
     const filterCategories = ['All', ...uniqueCategories];
-
-    const boughtItems = items.filter(item => item.isBought); // Keep original for stats
 
     if (loading) {
         return (
@@ -493,7 +512,7 @@ const GroceryListScreen = ({ user, onLogout, navigation }) => {
         const previousItems = [...items];
         setItems(prev => prev.filter(i => !i.isBought));
 
-        const familyId = getEffectiveFamilyId();
+        const familyId = userProfile.familyId;
         const result = await clearPurchasedItems(familyId);
 
         if (!result.success) {
@@ -519,7 +538,7 @@ const GroceryListScreen = ({ user, onLogout, navigation }) => {
                         const previousItems = [...items];
                         setItems([]);
 
-                        const familyId = getEffectiveFamilyId();
+                        const familyId = userProfile.familyId;
                         const result = await clearAllGroceryItems(familyId);
 
                         if (!result.success) {
@@ -570,18 +589,18 @@ const GroceryListScreen = ({ user, onLogout, navigation }) => {
                         </View>
                     </View>
                     <View style={styles.headerActions}>
-                        {/* List Type Button */}
+                        {/* List Selector Button */}
                         <TouchableOpacity
                             style={styles.listTypeContainer}
-                            onPress={() => setListSelectionModalVisible(true)}
+                            onPress={() => setListSelectorVisible(true)}
                         >
                             <View style={styles.listTypeButton}>
                                 <Text style={styles.listTypeButtonText}>
-                                    {listType === 'daily' ? 'D' : 'M'}
+                                    {(currentList.name || 'D').charAt(0)}
                                 </Text>
                             </View>
                             <Text style={styles.listTypeLabel}>
-                                {listType === 'daily' ? 'Daily' : 'Monthly'}
+                                {currentList.name || 'List'}
                             </Text>
                         </TouchableOpacity>
 
@@ -612,7 +631,7 @@ const GroceryListScreen = ({ user, onLogout, navigation }) => {
                     <Text style={styles.statLabel}>Bought</Text>
                 </View>
                 <View style={styles.statCard}>
-                    <Text style={styles.statNumber}>{items.length}</Text>
+                    <Text style={styles.statNumber}>{currentListItems.length}</Text>
                     <Text style={styles.statLabel}>Total</Text>
                 </View>
             </View>
@@ -701,12 +720,28 @@ const GroceryListScreen = ({ user, onLogout, navigation }) => {
                 currentItems={items}
             />
 
-            {/* List Type Selection Modal */}
-            <ListTypeSelectionModal
-                visible={listSelectionModalVisible}
-                onClose={() => setListSelectionModalVisible(false)}
-                currentType={listType}
-                onSelect={setListType}
+            {/* List Selector Modal */}
+            <ListSelectorModal
+                visible={listSelectorVisible}
+                onClose={() => setListSelectorVisible(false)}
+                familyId={userProfile?.familyId}
+                currentListId={currentList.id}
+                onSelect={(listId) => {
+                    // We need to find the list object to set name
+                    // We can fetch lists or pass it up.
+                    // The simple way: reload lists in useEffect will catch it if we update currentList.id?
+                    // No, useEffect runs on mount.
+                    // We need to fetch the list name.
+                    const fetchListName = async () => {
+                        const { getLists } = require('../services/groceryService');
+                        const res = await getLists(userProfile.familyId);
+                        if (res.success) {
+                            const found = res.lists.find(l => l.id === listId);
+                            if (found) setCurrentList(found);
+                        }
+                    };
+                    fetchListName();
+                }}
             />
 
             {/* List Options Modal (Delete Menu) */}
