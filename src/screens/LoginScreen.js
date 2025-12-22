@@ -166,12 +166,19 @@ const LoginScreen = ({ onLoginSuccess }) => {
                         )}
                     </TouchableOpacity>
 
+
+
                     {/* Google Login Button */}
                     <TouchableOpacity
                         style={[styles.googleButton, loading && styles.submitButtonDisabled]}
                         onPress={handleGoogleLogin}
                         disabled={loading}
                     >
+                        <Image
+                            source={require('../../assets/google-logo.png')}
+                            style={styles.googleIcon}
+                            resizeMode="contain"
+                        />
                         <Text style={styles.googleButtonText}>Sign in with Google</Text>
                     </TouchableOpacity>
 
@@ -301,6 +308,16 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: colors.border,
         ...shadows.small,
+        flexDirection: 'row',
+        justifyContent: 'center',
+        gap: spacing.sm,
+    },
+    googleIcon: {
+        width: 24,
+        height: 24,
+        marginRight: spacing.xs,
+        backgroundColor: colors.surface,
+        borderRadius: 12, // Optional: makes it circular if the image is transparent
     },
     googleButtonText: {
         color: colors.textPrimary,

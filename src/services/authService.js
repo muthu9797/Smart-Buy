@@ -226,10 +226,18 @@ export const updateUserProfile = async (userId, updates) => {
 
         dbUpdates.updated_at = new Date().toISOString();
 
+        if (updates.email) dbUpdates.email = updates.email; // Required for insert if not present
+
         const { data, error } = await supabase
             .from('profiles')
-            .update(dbUpdates)
-            .eq('id', userId)
+            .upsert({
+                id: userId,
+                ...dbUpdates,
+                updated_at: new Date().toISOString(),
+                // If creating, we want created_at to be set. upsert handles this if we pass it, 
+                // but usually created_at has a default. 
+                // Ideally we should rely on database defaults for created_at if possible or set it if missing.
+            })
             .select()
             .single();
 

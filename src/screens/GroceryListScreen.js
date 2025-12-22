@@ -18,6 +18,7 @@ import ListSelectorModal from '../components/ListSelectorModal';
 import NotificationBadge from '../components/NotificationBadge';
 import ListOptionsModal from '../components/ListOptionsModal';
 import SideMenu from '../components/SideMenu';
+import CompleteProfileModal from '../components/CompleteProfileModal';
 
 import {
     subscribeToGroceryList,
@@ -145,7 +146,7 @@ const GroceryListScreen = ({ user, onLogout, navigation }) => {
     // Helper to get effective family ID
     const getEffectiveFamilyId = () => {
         if (!userProfile) return null;
-        return listType === 'daily' ? userProfile.familyId : `${userProfile.familyId}-monthly`;
+        return userProfile.familyId;
     };
 
     const itemsRef = React.useRef(items);
@@ -285,12 +286,21 @@ const GroceryListScreen = ({ user, onLogout, navigation }) => {
     };
 
     const handleToggleBought = async (item) => {
+        console.log('DEBUG handleToggleBought UI Triggered:', item.id, item.name);
+
         if (isSelectionMode) {
+            console.log('DEBUG Selection Mode active');
             toggleSelection(item.id);
             return;
         }
 
-        if (!userProfile) return;
+        if (!userProfile) {
+            console.log('DEBUG handleToggleBought ABORT: No userProfile');
+            Alert.alert('Error', 'Profile missing. Please restart app.');
+            return;
+        }
+
+        console.log('DEBUG Proceeding with toggle. Current status:', item.isBought);
 
         // Optimistic update
         const previousItems = [...items];
@@ -305,14 +315,21 @@ const GroceryListScreen = ({ user, onLogout, navigation }) => {
 
         const familyId = getEffectiveFamilyId();
 
-        const result = item.isBought
-            ? await unmarkItemAsBought(familyId, item.id)
-            : await markItemAsBought(familyId, item.id, user.id, userProfile.fullName);
+        try {
+            const result = item.isBought
+                ? await unmarkItemAsBought(familyId, item.id)
+                : await markItemAsBought(familyId, item.id, user.id, userProfile.fullName);
 
-        if (!result.success) {
-            // Revert if failed
+            console.log('DEBUG Toggle result:', result);
+
+            if (!result.success) {
+                // Revert if failed
+                setItems(previousItems);
+                Alert.alert('Error', 'Failed to update item: ' + result.error);
+            }
+        } catch (e) {
+            console.error('DEBUG Toggle Exception:', e);
             setItems(previousItems);
-            Alert.alert('Error', 'Failed to update item: ' + result.error);
         }
     };
 
@@ -559,66 +576,90 @@ const GroceryListScreen = ({ user, onLogout, navigation }) => {
     return (
         <View style={styles.container}>
             <StatusBar style="dark" />
+            {/* Complete Profile Modal */}
+            <CompleteProfileModal
+                visible={!loading && user && !userProfile}
+                user={user}
+                onSaveSuccess={(newProfile) => {
+                    // Normalize the profile data returned from DB (snake_case) to app (camelCase)
+                    const normalizedProfile = {
+                        id: newProfile.id,
+                        email: newProfile.email,
+                        role: newProfile.role,
+                        familyId: newProfile.family_id,
+                        fullName: newProfile.full_name,
+                        createdAt: newProfile.created_at,
+                        updatedAt: newProfile.updated_at,
+                    };
+                    setUserProfile(normalizedProfile);
+                }}
+            />
+
+            {/* List Type Selector Button (Floating or Header) */}
+            {/* We moved it to header, so no floating button needed here unless we want one */}
+
 
             {/* Header */}
-            {isSelectionMode ? (
-                <View style={[styles.header, styles.headerSelection]}>
-                    <View style={styles.headerActions}>
-                        <TouchableOpacity onPress={() => {
-                            setIsSelectionMode(false);
-                            setSelectedItemIds(new Set());
-                        }} style={styles.iconButton}>
-                            <MaterialIcons name="close" size={24} color={colors.textPrimary} />
-                        </TouchableOpacity>
-                        <Text style={styles.headerTitle}>{selectedItemIds.size} Selected</Text>
-                    </View>
-                    <View style={styles.headerActions}>
-                        <TouchableOpacity onPress={deleteSelectedItems} style={styles.iconButton}>
-                            <MaterialIcons name="delete" size={24} color={colors.error} />
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            ) : (
-                <View style={styles.header}>
-                    <View style={styles.headerLeft}>
-                        <TouchableOpacity onPress={() => setSideMenuVisible(true)} style={styles.iconButton}>
-                            <MaterialIcons name="menu" size={28} color={colors.textPrimary} />
-                        </TouchableOpacity>
-                        <View style={styles.headerTitleContainer}>
-                            <Text style={styles.headerTitle}>🛒 Grocery List</Text>
+            {
+                isSelectionMode ? (
+                    <View style={[styles.header, styles.headerSelection]}>
+                        <View style={styles.headerActions}>
+                            <TouchableOpacity onPress={() => {
+                                setIsSelectionMode(false);
+                                setSelectedItemIds(new Set());
+                            }} style={styles.iconButton}>
+                                <MaterialIcons name="close" size={24} color={colors.textPrimary} />
+                            </TouchableOpacity>
+                            <Text style={styles.headerTitle}>{selectedItemIds.size} Selected</Text>
+                        </View>
+                        <View style={styles.headerActions}>
+                            <TouchableOpacity onPress={deleteSelectedItems} style={styles.iconButton}>
+                                <MaterialIcons name="delete" size={24} color={colors.error} />
+                            </TouchableOpacity>
                         </View>
                     </View>
-                    <View style={styles.headerActions}>
-                        {/* List Selector Button */}
-                        <TouchableOpacity
-                            style={styles.listTypeContainer}
-                            onPress={() => setListSelectorVisible(true)}
-                        >
-                            <View style={styles.listTypeButton}>
-                                <Text style={styles.listTypeButtonText}>
-                                    {(currentList.name || 'D').charAt(0)}
-                                </Text>
-                            </View>
-                            <Text style={styles.listTypeLabel}>
-                                {currentList.name || 'List'}
-                            </Text>
-                        </TouchableOpacity>
-
-                        {items.length > 0 && (
-                            <TouchableOpacity onPress={handleClearOptions} style={styles.iconButton}>
-                                <Text style={styles.actionIcon}>🗑️</Text>
+                ) : (
+                    <View style={styles.header}>
+                        <View style={styles.headerLeft}>
+                            <TouchableOpacity onPress={() => setSideMenuVisible(true)} style={styles.iconButton}>
+                                <MaterialIcons name="menu" size={28} color={colors.textPrimary} />
                             </TouchableOpacity>
-                        )}
-
-                        <TouchableOpacity onPress={() => setNotificationCount(0)} style={styles.iconButton}>
-                            <View>
-                                <Text style={styles.actionIcon}>🔔</Text>
-                                <NotificationBadge count={notificationCount} />
+                            <View style={styles.headerTitleContainer}>
+                                <Text style={styles.headerTitle}>🛒 Grocery List</Text>
                             </View>
-                        </TouchableOpacity>
+                        </View>
+                        <View style={styles.headerActions}>
+                            {/* List Selector Button */}
+                            <TouchableOpacity
+                                style={styles.listTypeContainer}
+                                onPress={() => setListSelectorVisible(true)}
+                            >
+                                <View style={styles.listTypeButton}>
+                                    <Text style={styles.listTypeButtonText}>
+                                        {(currentList.name || 'D').charAt(0)}
+                                    </Text>
+                                </View>
+                                <Text style={styles.listTypeLabel}>
+                                    {currentList.name || 'List'}
+                                </Text>
+                            </TouchableOpacity>
+
+                            {items.length > 0 && (
+                                <TouchableOpacity onPress={handleClearOptions} style={styles.iconButton}>
+                                    <Text style={styles.actionIcon}>🗑️</Text>
+                                </TouchableOpacity>
+                            )}
+
+                            <TouchableOpacity onPress={() => setNotificationCount(0)} style={styles.iconButton}>
+                                <View>
+                                    <Text style={styles.actionIcon}>🔔</Text>
+                                    <NotificationBadge count={notificationCount} />
+                                </View>
+                            </TouchableOpacity>
+                        </View>
                     </View>
-                </View>
-            )}
+                )
+            }
 
             {/* Stats */}
             <View style={styles.statsContainer}>
@@ -698,14 +739,16 @@ const GroceryListScreen = ({ user, onLogout, navigation }) => {
             />
 
             {/* Floating Add Button */}
-            {!isSelectionMode && (
-                <TouchableOpacity
-                    style={styles.fab}
-                    onPress={() => setModalVisible(true)}
-                >
-                    <Text style={styles.fabText}>+</Text>
-                </TouchableOpacity>
-            )}
+            {
+                !isSelectionMode && (
+                    <TouchableOpacity
+                        style={styles.fab}
+                        onPress={() => setModalVisible(true)}
+                    >
+                        <Text style={styles.fabText}>+</Text>
+                    </TouchableOpacity>
+                )
+            }
 
             {/* Add Item Modal */}
             <AddItemModal
@@ -760,7 +803,7 @@ const GroceryListScreen = ({ user, onLogout, navigation }) => {
                 onNavigateProfile={() => navigation.navigate('Profile')}
                 onLogout={onLogout}
             />
-        </View>
+        </View >
     );
 };
 
