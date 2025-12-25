@@ -8,6 +8,7 @@ import LoginScreen from './src/screens/LoginScreen';
 import GroceryListScreen from './src/screens/GroceryListScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import ToDoListScreen from './src/screens/ToDoListScreen';
+import ChatScreen from './src/screens/ChatScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import { colors } from './src/styles/theme';
 
@@ -64,6 +65,14 @@ function AppContent() {
                     <Stack.Screen name="ToDoList">
                         {(props) => (
                             <ToDoListScreen
+                                {...props}
+                                user={user}
+                            />
+                        )}
+                    </Stack.Screen>
+                    <Stack.Screen name="Chat">
+                        {(props) => (
+                            <ChatScreen
                                 {...props}
                                 user={user}
                             />

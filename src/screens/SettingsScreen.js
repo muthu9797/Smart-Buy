@@ -42,7 +42,7 @@ const SettingsScreen = ({ navigation }) => {
                             <MaterialIcons
                                 name={isDarkMode ? "dark-mode" : "light-mode"}
                                 size={24}
-                                color={colors.primary}
+                                color={isDarkMode ? colors.accent : colors.primary}
                             />
                             <View style={styles.settingText}>
                                 <Text style={styles.settingTitle}>Dark Mode</Text>
@@ -54,8 +54,8 @@ const SettingsScreen = ({ navigation }) => {
                         <Switch
                             value={isDarkMode}
                             onValueChange={toggleTheme}
-                            trackColor={{ false: colors.border, true: colors.primaryLight }}
-                            thumbColor={isDarkMode ? colors.primary : colors.surface}
+                            trackColor={{ false: colors.border, true: colors.accentLight }}
+                            thumbColor={isDarkMode ? colors.accent : colors.surface}
                         />
                     </View>
                 </View>

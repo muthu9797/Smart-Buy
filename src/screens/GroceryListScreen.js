@@ -763,7 +763,11 @@ const GroceryListScreen = ({ user, onLogout, navigation }) => {
                                 style={styles.iconButton}
                                 onPress={() => setAppLauncherVisible(true)}
                             >
-                                <MaterialIcons name="grid-view" size={24} color={colors.textPrimary} />
+                                <MaterialIcons
+                                    name="grid-view"
+                                    size={24}
+                                    color={isDarkMode ? themeColors.accent : themeColors.textPrimary}
+                                />
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -781,7 +785,7 @@ const GroceryListScreen = ({ user, onLogout, navigation }) => {
                     } else if (appId === 'todo') {
                         navigation.navigate('ToDoList');
                     } else if (appId === 'chat') {
-                        Alert.alert('Coming Soon', 'Group Chat feature is currently under development.');
+                        navigation.navigate('Chat');
                     }
                 }}
             />
