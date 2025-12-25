@@ -10,11 +10,13 @@ import {
     TouchableWithoutFeedback,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useTheme } from '../context/ThemeContext';
 import { colors, spacing, typography, borderRadius, shadows } from '../styles/theme';
 
 const { height } = Dimensions.get('window');
 
 const TodoOptionsModal = ({ visible, onClose, onSelectItems, onClearCompleted, onClearAll }) => {
+    const { isDarkMode, colors: themeColors } = useTheme();
     const slideAnim = useRef(new Animated.Value(height)).current;
     const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -49,7 +51,6 @@ const TodoOptionsModal = ({ visible, onClose, onSelectItems, onClearCompleted, o
     }, [visible]);
 
     const handleOption = (action) => {
-        // Close first then execute
         onClose();
         setTimeout(action, 300);
     };
@@ -68,62 +69,61 @@ const TodoOptionsModal = ({ visible, onClose, onSelectItems, onClearCompleted, o
                     <TouchableWithoutFeedback>
                         <Animated.View style={[
                             styles.content,
-                            { transform: [{ translateY: slideAnim }] }
+                            { transform: [{ translateY: slideAnim }], backgroundColor: themeColors.surface }
                         ]}>
-                            <View style={styles.handle} />
-                            <Text style={styles.title}>Task Options</Text>
+                            <View style={[styles.handle, { backgroundColor: themeColors.border }]} />
+                            <Text style={[styles.title, { color: themeColors.textPrimary }]}>Task Options</Text>
 
                             <TouchableOpacity
                                 style={styles.option}
                                 onPress={() => handleOption(onSelectItems)}
                             >
-                                <View style={[styles.iconContainer, { backgroundColor: colors.primary }]}>
-                                    <MaterialIcons name="checklist" size={24} color={colors.surface} />
+                                <View style={[styles.iconContainer, { backgroundColor: themeColors.primary }]}>
+                                    <MaterialIcons name="checklist" size={24} color="#FFF" />
                                 </View>
                                 <View style={styles.textContainer}>
-                                    <Text style={styles.optionTitle}>Select Items to Delete</Text>
-                                    <Text style={styles.optionDescription}>Pick multiple tasks to remove</Text>
+                                    <Text style={[styles.optionTitle, { color: themeColors.textPrimary }]}>Select Items to Delete</Text>
+                                    <Text style={[styles.optionDescription, { color: themeColors.textSecondary }]}>Pick multiple tasks to remove</Text>
                                 </View>
-                                <MaterialIcons name="chevron-right" size={24} color={colors.textLight} />
+                                <MaterialIcons name="chevron-right" size={24} color={themeColors.textLight} />
                             </TouchableOpacity>
 
-                            <View style={styles.separator} />
+                            <View style={[styles.separator, { backgroundColor: themeColors.border }]} />
 
                             <TouchableOpacity
                                 style={styles.option}
                                 onPress={() => handleOption(onClearCompleted)}
                             >
-                                <View style={[styles.iconContainer, { backgroundColor: colors.success }]}>
-                                    <MaterialIcons name="task-alt" size={24} color={colors.surface} />
+                                <View style={[styles.iconContainer, { backgroundColor: themeColors.success }]}>
+                                    <MaterialIcons name="task-alt" size={24} color="#FFF" />
                                 </View>
                                 <View style={styles.textContainer}>
-                                    <Text style={styles.optionTitle}>Clear Completed</Text>
-                                    <Text style={styles.optionDescription}>Remove only finished tasks</Text>
+                                    <Text style={[styles.optionTitle, { color: themeColors.textPrimary }]}>Clear Completed</Text>
+                                    <Text style={[styles.optionDescription, { color: themeColors.textSecondary }]}>Remove only finished tasks</Text>
                                 </View>
-                                <MaterialIcons name="chevron-right" size={24} color={colors.textLight} />
+                                <MaterialIcons name="chevron-right" size={24} color={themeColors.textLight} />
                             </TouchableOpacity>
 
-                            <View style={styles.separator} />
+                            <View style={[styles.separator, { backgroundColor: themeColors.border }]} />
 
                             <TouchableOpacity
                                 style={styles.option}
                                 onPress={() => handleOption(onClearAll)}
                             >
-                                <View style={[styles.iconContainer, { backgroundColor: colors.error }]}>
-                                    <MaterialIcons name="delete-forever" size={24} color={colors.surface} />
+                                <View style={[styles.iconContainer, { backgroundColor: themeColors.error }]}>
+                                    <MaterialIcons name="delete-forever" size={24} color="#FFF" />
                                 </View>
                                 <View style={styles.textContainer}>
-                                    <Text style={[styles.optionTitle, { color: colors.error }]}>Clear All</Text>
-                                    <Text style={styles.optionDescription}>Delete all tasks from the list</Text>
+                                    <Text style={[styles.optionTitle, { color: themeColors.error }]}>Clear All</Text>
+                                    <Text style={[styles.optionDescription, { color: themeColors.textSecondary }]}>Delete all tasks from the list</Text>
                                 </View>
-                                <MaterialIcons name="chevron-right" size={24} color={colors.textLight} />
+                                <MaterialIcons name="chevron-right" size={24} color={themeColors.textLight} />
                             </TouchableOpacity>
 
-                            <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-                                <Text style={styles.cancelText}>Cancel</Text>
+                            <TouchableOpacity style={[styles.cancelButton, { backgroundColor: themeColors.background }]} onPress={onClose}>
+                                <Text style={[styles.cancelText, { color: themeColors.textPrimary }]}>Cancel</Text>
                             </TouchableOpacity>
 
-                            {/* Safe area spacer */}
                             <View style={{ height: 20 }} />
                         </Animated.View>
                     </TouchableWithoutFeedback>

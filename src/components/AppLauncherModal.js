@@ -1,11 +1,13 @@
 import React from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, Dimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useTheme } from '../context/ThemeContext';
 import { colors, spacing, typography, borderRadius, shadows } from '../styles/theme';
 
 const { width } = Dimensions.get('window');
 
 const AppLauncherModal = ({ visible, onClose, onNavigate }) => {
+    const { isDarkMode, colors: themeColors } = useTheme();
     const apps = [
         { id: 'grocery', name: 'Grocery List', icon: 'shopping-cart', color: '#4CAF50' }, // Green
         { id: 'todo', name: 'To-Do List', icon: 'check-box', color: '#2196F3' }, // Blue
@@ -24,11 +26,7 @@ const AppLauncherModal = ({ visible, onClose, onNavigate }) => {
                 activeOpacity={1}
                 onPress={onClose}
             >
-                {/* 
-                   Positioning: The popup in the reference image is top-right, below the profile/grid.
-                   We'll position it relatively or absolute top-right.
-                */}
-                <View style={styles.popupContainer}>
+                <View style={[styles.popupContainer, { backgroundColor: themeColors.surface, borderColor: themeColors.border }]}>
                     <View style={styles.gridContainer}>
                         {apps.map((app) => (
                             <TouchableOpacity
@@ -42,7 +40,7 @@ const AppLauncherModal = ({ visible, onClose, onNavigate }) => {
                                 <View style={[styles.iconContainer, { backgroundColor: app.color + '20' }]}>
                                     <MaterialIcons name={app.icon} size={32} color={app.color} />
                                 </View>
-                                <Text style={styles.appName}>{app.name}</Text>
+                                <Text style={[styles.appName, { color: themeColors.textPrimary }]}>{app.name}</Text>
                             </TouchableOpacity>
                         ))}
                     </View>

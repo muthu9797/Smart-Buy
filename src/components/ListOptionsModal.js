@@ -10,11 +10,13 @@ import {
     TouchableWithoutFeedback,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useTheme } from '../context/ThemeContext';
 import { colors, spacing, typography, borderRadius, shadows } from '../styles/theme';
 
 const { height } = Dimensions.get('window');
 
 const ListOptionsModal = ({ visible, onClose, onSelectOption, onClearPurchased, onClearAll }) => {
+    const { isDarkMode, colors: themeColors } = useTheme();
     const slideAnim = useRef(new Animated.Value(height)).current;
     const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -68,59 +70,59 @@ const ListOptionsModal = ({ visible, onClose, onSelectOption, onClearPurchased, 
                     <TouchableWithoutFeedback>
                         <Animated.View style={[
                             styles.content,
-                            { transform: [{ translateY: slideAnim }] }
+                            { transform: [{ translateY: slideAnim }], backgroundColor: themeColors.surface }
                         ]}>
-                            <View style={styles.handle} />
-                            <Text style={styles.title}>List Options</Text>
+                            <View style={[styles.handle, { backgroundColor: themeColors.border }]} />
+                            <Text style={[styles.title, { color: themeColors.textPrimary }]}>List Options</Text>
 
                             <TouchableOpacity
                                 style={styles.option}
                                 onPress={() => handleOption(onSelectOption)}
                             >
-                                <View style={[styles.iconContainer, { backgroundColor: colors.primary }]}>
-                                    <MaterialIcons name="checklist" size={24} color={colors.surface} />
+                                <View style={[styles.iconContainer, { backgroundColor: themeColors.primary }]}>
+                                    <MaterialIcons name="checklist" size={24} color="#FFF" />
                                 </View>
                                 <View style={styles.textContainer}>
-                                    <Text style={styles.optionTitle}>Select Items to Delete</Text>
-                                    <Text style={styles.optionDescription}>Pick multiple items to remove</Text>
+                                    <Text style={[styles.optionTitle, { color: themeColors.textPrimary }]}>Select Items to Delete</Text>
+                                    <Text style={[styles.optionDescription, { color: themeColors.textSecondary }]}>Pick multiple items to remove</Text>
                                 </View>
-                                <MaterialIcons name="chevron-right" size={24} color={colors.textLight} />
+                                <MaterialIcons name="chevron-right" size={24} color={themeColors.textLight} />
                             </TouchableOpacity>
 
-                            <View style={styles.separator} />
+                            <View style={[styles.separator, { backgroundColor: themeColors.border }]} />
 
                             <TouchableOpacity
                                 style={styles.option}
                                 onPress={() => handleOption(onClearPurchased)}
                             >
-                                <View style={[styles.iconContainer, { backgroundColor: colors.success }]}>
-                                    <MaterialIcons name="remove-shopping-cart" size={24} color={colors.surface} />
+                                <View style={[styles.iconContainer, { backgroundColor: themeColors.success }]}>
+                                    <MaterialIcons name="remove-shopping-cart" size={24} color="#FFF" />
                                 </View>
                                 <View style={styles.textContainer}>
-                                    <Text style={styles.optionTitle}>Clear Purchased</Text>
-                                    <Text style={styles.optionDescription}>Remove only bought items</Text>
+                                    <Text style={[styles.optionTitle, { color: themeColors.textPrimary }]}>Clear Purchased</Text>
+                                    <Text style={[styles.optionDescription, { color: themeColors.textSecondary }]}>Remove only bought items</Text>
                                 </View>
-                                <MaterialIcons name="chevron-right" size={24} color={colors.textLight} />
+                                <MaterialIcons name="chevron-right" size={24} color={themeColors.textLight} />
                             </TouchableOpacity>
 
-                            <View style={styles.separator} />
+                            <View style={[styles.separator, { backgroundColor: themeColors.border }]} />
 
                             <TouchableOpacity
                                 style={styles.option}
                                 onPress={() => handleOption(onClearAll)}
                             >
-                                <View style={[styles.iconContainer, { backgroundColor: colors.error }]}>
-                                    <MaterialIcons name="delete-forever" size={24} color={colors.surface} />
+                                <View style={[styles.iconContainer, { backgroundColor: themeColors.error }]}>
+                                    <MaterialIcons name="delete-forever" size={24} color="#FFF" />
                                 </View>
                                 <View style={styles.textContainer}>
-                                    <Text style={[styles.optionTitle, { color: colors.error }]}>Clear All</Text>
-                                    <Text style={styles.optionDescription}>Delete everything from the list</Text>
+                                    <Text style={[styles.optionTitle, { color: themeColors.error }]}>Clear All</Text>
+                                    <Text style={[styles.optionDescription, { color: themeColors.textSecondary }]}>Delete everything from the list</Text>
                                 </View>
-                                <MaterialIcons name="chevron-right" size={24} color={colors.textLight} />
+                                <MaterialIcons name="chevron-right" size={24} color={themeColors.textLight} />
                             </TouchableOpacity>
 
-                            <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-                                <Text style={styles.cancelText}>Cancel</Text>
+                            <TouchableOpacity style={[styles.cancelButton, { backgroundColor: themeColors.background }]} onPress={onClose}>
+                                <Text style={[styles.cancelText, { color: themeColors.textPrimary }]}>Cancel</Text>
                             </TouchableOpacity>
 
                             {/* Safe area spacer */}

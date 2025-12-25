@@ -1,8 +1,10 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, Image } from 'react-native';
+import { useTheme } from '../context/ThemeContext';
 import { colors, spacing, typography, borderRadius, shadows, getColorForName } from '../styles/theme';
 
 const GroceryItem = ({ item, onToggleBought, onDelete, currentUserId, userRole, isSelectionMode, isSelected }) => {
+    const { isDarkMode, colors: themeColors } = useTheme();
     const scaleAnim = React.useRef(new Animated.Value(1)).current;
 
     const handlePress = () => {
@@ -36,19 +38,16 @@ const GroceryItem = ({ item, onToggleBought, onDelete, currentUserId, userRole, 
     };
 
     const getBuyerName = () => {
-        if (item.boughtBy === currentUserId) return 'Me'; // Or User's Name? User said "Purchased by Name", usually "Me" is clearer for self, but let's stick to Name if available or "Me". User request was specific "by Name". But "Purchased by Ramya" when I am Ramya is ok.
-        // Actually for self, "Me" is standard. Let's keep "Me" for self?
-        // User request: "like purchased by name not role".
-        // Let's use name if available.
+        if (item.boughtBy === currentUserId) return 'Me';
         if (item.boughtByName) return item.boughtByName;
-        if (item.boughtBy === item.addedBy) return item.addedByRole; // Fallback to role if name missing
+        if (item.boughtBy === item.addedBy) return item.addedByRole;
         return 'a Family Member';
     };
 
     return (
         <TouchableOpacity
             activeOpacity={0.9}
-            onLongPress={() => onDelete(item)} // onDelete is now handleLongPress from parent
+            onLongPress={() => onDelete(item)}
             onPress={isSelectionMode ? handlePress : undefined}
             delayLongPress={500}
         >
@@ -60,6 +59,7 @@ const GroceryItem = ({ item, onToggleBought, onDelete, currentUserId, userRole, 
                 <View
                     style={[
                         styles.itemCard,
+                        { backgroundColor: themeColors.surface },
                         item.isBought && !isSelectionMode && styles.itemCardBought,
                         isSelectionMode && isSelected && styles.itemCardSelected
                     ]}
@@ -69,13 +69,14 @@ const GroceryItem = ({ item, onToggleBought, onDelete, currentUserId, userRole, 
                         <TouchableOpacity
                             onPress={handlePress}
                             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                            disabled={isSelectionMode} // handled by parent touchable in selection mode
+                            disabled={isSelectionMode}
                         >
                             <View style={[
                                 styles.checkbox,
+                                { borderColor: themeColors.border },
                                 isSelectionMode ? styles.selectionCircle : null,
-                                !isSelectionMode && item.isBought && styles.checkboxChecked,
-                                isSelectionMode && isSelected && styles.selectionCircleSelected
+                                !isSelectionMode && item.isBought && [styles.checkboxChecked, { backgroundColor: themeColors.success, borderColor: themeColors.success }],
+                                isSelectionMode && isSelected && [styles.selectionCircleSelected, { backgroundColor: themeColors.primary, borderColor: themeColors.primary }]
                             ]}>
                                 {!isSelectionMode && item.isBought && <Text style={styles.checkmark}>✓</Text>}
                                 {isSelectionMode && isSelected && <View style={styles.selectionDot} />}
@@ -102,18 +103,19 @@ const GroceryItem = ({ item, onToggleBought, onDelete, currentUserId, userRole, 
                                 )}
                                 <Text style={[
                                     styles.itemNameText,
+                                    { color: themeColors.textPrimary },
                                     item.isBought && styles.itemNameBought
                                 ]}>
                                     {item.name}
                                 </Text>
                             </View>
-                            <Text style={styles.quantityText}>Qty: {item.quantity}</Text>
+                            <Text style={[styles.quantityText, { color: themeColors.textSecondary }]}>Qty: {item.quantity}</Text>
                             <View style={styles.metaRow}>
-                                <Text style={styles.itemMeta}>
+                                <Text style={[styles.itemMeta, { color: themeColors.textSecondary }]}>
                                     Added by {getAddedByName()}
                                 </Text>
                                 {item.isBought && item.boughtAt && (
-                                    <Text style={styles.boughtText}>
+                                    <Text style={[styles.boughtText, { color: themeColors.success }]}>
                                         • ✅ Purchased by {getBuyerName()}
                                     </Text>
                                 )}

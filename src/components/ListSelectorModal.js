@@ -12,10 +12,12 @@ import {
     Alert
 } from 'react-native';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../context/ThemeContext';
 import { colors, spacing, typography, borderRadius, shadows } from '../styles/theme';
 import { getLists, createList, deleteList, updateList, duplicateList } from '../services/groceryService';
 
 const ListSelectorModal = ({ visible, onClose, familyId, currentListId, onSelect }) => {
+    const { isDarkMode, colors: themeColors } = useTheme();
     const [lists, setLists] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isCreating, setIsCreating] = useState(false);
@@ -180,9 +182,9 @@ const ListSelectorModal = ({ visible, onClose, familyId, currentListId, onSelect
             <TouchableWithoutFeedback onPress={onClose}>
                 <View style={styles.overlay}>
                     <TouchableWithoutFeedback>
-                        <View style={styles.modalContainer}>
+                        <View style={[styles.modalContainer, { backgroundColor: themeColors.surface }]}>
                             <View style={styles.header}>
-                                <Text style={styles.title}>My Lists</Text>
+                                <Text style={[styles.title, { color: themeColors.textPrimary }]}>My Lists</Text>
                                 <TouchableOpacity
                                     onPress={() => {
                                         setEditingList(null);
@@ -192,14 +194,14 @@ const ListSelectorModal = ({ visible, onClose, familyId, currentListId, onSelect
                                     }}
                                     style={styles.addButton}
                                 >
-                                    <MaterialIcons name="add" size={24} color={colors.primary} />
+                                    <MaterialIcons name="add" size={24} color={themeColors.primary} />
                                 </TouchableOpacity>
                             </View>
 
 
 
                             {loading ? (
-                                <ActivityIndicator size="large" color={colors.primary} style={styles.loader} />
+                                <ActivityIndicator size="large" color={themeColors.primary} style={styles.loader} />
                             ) : (
                                 <ScrollView style={styles.listContainer}>
                                     {lists.map((list) => (
@@ -207,7 +209,8 @@ const ListSelectorModal = ({ visible, onClose, familyId, currentListId, onSelect
                                             key={list.id}
                                             style={[
                                                 styles.optionRow,
-                                                currentListId === list.id && styles.optionRowSelected
+                                                { backgroundColor: themeColors.surface, borderColor: themeColors.border },
+                                                currentListId === list.id && [styles.optionRowSelected, { backgroundColor: themeColors.background, borderColor: themeColors.primary }]
                                             ]}
                                             onPress={() => {
                                                 onSelect(list.id);
@@ -219,44 +222,46 @@ const ListSelectorModal = ({ visible, onClose, familyId, currentListId, onSelect
                                             <View style={styles.listInfo}>
                                                 <Text style={[
                                                     styles.optionLabel,
-                                                    currentListId === list.id && styles.optionLabelSelected
+                                                    { color: themeColors.textPrimary },
+                                                    currentListId === list.id && { color: themeColors.primary }
                                                 ]}>
                                                     {list.name}
                                                 </Text>
                                             </View>
 
                                             {list.is_locked && (
-                                                <MaterialIcons name="lock-outline" size={16} color={colors.textSecondary} style={{ marginRight: 8 }} />
+                                                <MaterialIcons name="lock-outline" size={16} color={themeColors.textSecondary} style={{ marginRight: 8 }} />
                                             )}
                                         </TouchableOpacity>
                                     ))}
                                     {lists.length === 0 && (
-                                        <Text style={styles.emptyText}>No lists found.</Text>
+                                        <Text style={[styles.emptyText, { color: themeColors.textSecondary }]}>No lists found.</Text>
                                     )}
                                 </ScrollView>
                             )}
 
-                            <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-                                <Text style={styles.closeText}>Close</Text>
+                            <TouchableOpacity style={[styles.closeButton, { borderTopColor: themeColors.border }]} onPress={onClose}>
+                                <Text style={[styles.closeText, { color: themeColors.textSecondary }]}>Close</Text>
                             </TouchableOpacity>
                         </View>
                     </TouchableWithoutFeedback>
                     {isCreating && (
                         <View style={styles.createOverlay}>
-                            <View style={styles.createDialog}>
-                                <Text style={styles.createTitle}>
+                            <View style={[styles.createDialog, { backgroundColor: themeColors.surface }]}>
+                                <Text style={[styles.createTitle, { color: themeColors.textPrimary }]}>
                                     {editingList ? 'Rename List' : (duplicatingList ? 'Duplicate List' : 'New List Name')}
                                 </Text>
                                 <TextInput
-                                    style={styles.input}
+                                    style={[styles.input, { backgroundColor: themeColors.background, color: themeColors.textPrimary, borderColor: themeColors.border }]}
                                     placeholder="e.g. Party, Weekly"
+                                    placeholderTextColor={themeColors.textLight}
                                     value={newListName}
                                     onChangeText={setNewListName}
                                     autoFocus={true}
                                 />
                                 <View style={styles.createActions}>
                                     <TouchableOpacity
-                                        style={[styles.actionButton, styles.cancelBtn]}
+                                        style={[styles.actionButton, styles.cancelBtn, { backgroundColor: themeColors.background }]}
                                         onPress={() => {
                                             setIsCreating(false);
                                             setEditingList(null);
@@ -264,10 +269,10 @@ const ListSelectorModal = ({ visible, onClose, familyId, currentListId, onSelect
                                             setNewListName('');
                                         }}
                                     >
-                                        <Text style={styles.actionTextCancel}>Cancel</Text>
+                                        <Text style={[styles.actionTextCancel, { color: themeColors.textSecondary }]}>Cancel</Text>
                                     </TouchableOpacity>
                                     <TouchableOpacity
-                                        style={[styles.actionButton, styles.saveBtn]}
+                                        style={[styles.actionButton, styles.saveBtn, { backgroundColor: themeColors.primary }]}
                                         onPress={handleSaveList}
                                         disabled={creatingLoader}
                                     >
@@ -288,36 +293,36 @@ const ListSelectorModal = ({ visible, onClose, familyId, currentListId, onSelect
                     {/* Options Menu Overlay */}
                     {optionsList && (
                         <View style={styles.createOverlay}>
-                            <View style={styles.createDialog}>
-                                <Text style={styles.createTitle}>{optionsList.name}</Text>
+                            <View style={[styles.createDialog, { backgroundColor: themeColors.surface }]}>
+                                <Text style={[styles.createTitle, { color: themeColors.textPrimary }]}>{optionsList.name}</Text>
 
                                 <TouchableOpacity
-                                    style={styles.optionButton}
+                                    style={[styles.optionButton, { borderBottomColor: themeColors.border }]}
                                     onPress={() => handleOptionSelect('rename')}
                                 >
-                                    <MaterialIcons name="edit" size={20} color={colors.textPrimary} style={styles.optionIcon} />
-                                    <Text style={styles.optionText}>Rename List</Text>
+                                    <MaterialIcons name="edit" size={20} color={themeColors.textPrimary} style={styles.optionIcon} />
+                                    <Text style={[styles.optionText, { color: themeColors.textPrimary }]}>Rename List</Text>
                                 </TouchableOpacity>
 
                                 <TouchableOpacity
-                                    style={styles.optionButton}
+                                    style={[styles.optionButton, { borderBottomColor: themeColors.border }]}
                                     onPress={() => handleOptionSelect('duplicate')}
                                 >
-                                    <Ionicons name="copy-outline" size={20} color={colors.textPrimary} style={styles.optionIcon} />
-                                    <Text style={styles.optionText}>Duplicate List</Text>
+                                    <Ionicons name="copy-outline" size={20} color={themeColors.textPrimary} style={styles.optionIcon} />
+                                    <Text style={[styles.optionText, { color: themeColors.textPrimary }]}>Duplicate List</Text>
                                 </TouchableOpacity>
 
                                 <TouchableOpacity
-                                    style={styles.optionButton}
+                                    style={[styles.optionButton, { borderBottomColor: themeColors.border }]}
                                     onPress={() => handleOptionSelect('lock')}
                                 >
                                     <MaterialIcons
                                         name={optionsList.is_locked ? "lock-open" : "lock-outline"}
                                         size={20}
-                                        color={colors.textPrimary}
+                                        color={themeColors.textPrimary}
                                         style={styles.optionIcon}
                                     />
-                                    <Text style={styles.optionText}>
+                                    <Text style={[styles.optionText, { color: themeColors.textPrimary }]}>
                                         {optionsList.is_locked ? 'Unlock List' : 'Lock List'}
                                     </Text>
                                 </TouchableOpacity>
@@ -326,15 +331,15 @@ const ListSelectorModal = ({ visible, onClose, familyId, currentListId, onSelect
                                     style={[styles.optionButton, styles.deleteOption]}
                                     onPress={() => handleOptionSelect('delete')}
                                 >
-                                    <MaterialIcons name="delete-outline" size={20} color={colors.error} style={styles.optionIcon} />
-                                    <Text style={[styles.optionText, styles.deleteText]}>Delete List</Text>
+                                    <MaterialIcons name="delete-outline" size={20} color={themeColors.error} style={styles.optionIcon} />
+                                    <Text style={[styles.optionText, { color: themeColors.error }]}>Delete List</Text>
                                 </TouchableOpacity>
 
                                 <TouchableOpacity
-                                    style={styles.cancelOptionButton}
+                                    style={[styles.cancelOptionButton, { backgroundColor: themeColors.background }]}
                                     onPress={() => setOptionsList(null)}
                                 >
-                                    <Text style={styles.cancelOptionText}>Cancel</Text>
+                                    <Text style={[styles.cancelOptionText, { color: themeColors.textSecondary }]}>Cancel</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
