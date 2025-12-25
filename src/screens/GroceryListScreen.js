@@ -41,10 +41,12 @@ import {
 } from '../services/notificationService';
 import { Audio } from 'expo-av';
 import { processVoiceCommand } from '../services/aiService';
+import { useTheme } from '../context/ThemeContext';
 import { colors, spacing, typography, borderRadius, shadows } from '../styles/theme';
 import { COMMON_ITEMS } from '../data/commonItems';
 
 const GroceryListScreen = ({ user, onLogout, navigation }) => {
+    const { isDarkMode, colors: themeColors } = useTheme();
     const [items, setItems] = useState([]);
     const [userProfile, setUserProfile] = useState(null);
     const [modalVisible, setModalVisible] = useState(false);
@@ -675,8 +677,8 @@ const GroceryListScreen = ({ user, onLogout, navigation }) => {
     };
 
     return (
-        <View style={styles.container}>
-            <StatusBar style="dark" />
+        <View style={[styles.container, { backgroundColor: themeColors.background }]}>
+            <StatusBar style={isDarkMode ? "light" : "dark"} />
             {/* Complete Profile Modal */}
             <CompleteProfileModal
                 visible={!loading && user && !userProfile}
@@ -703,15 +705,15 @@ const GroceryListScreen = ({ user, onLogout, navigation }) => {
             {/* Header */}
             {
                 isSelectionMode ? (
-                    <View style={[styles.header, styles.headerSelection]}>
+                    <View style={[styles.header, styles.headerSelection, { backgroundColor: themeColors.surfaceAlt }]}>
                         <View style={styles.headerActions}>
                             <TouchableOpacity onPress={() => {
                                 setIsSelectionMode(false);
                                 setSelectedItemIds(new Set());
                             }} style={styles.iconButton}>
-                                <MaterialIcons name="close" size={24} color={colors.textPrimary} />
+                                <MaterialIcons name="close" size={24} color={themeColors.textPrimary} />
                             </TouchableOpacity>
-                            <Text style={styles.headerTitle}>{selectedItemIds.size} Selected</Text>
+                            <Text style={[styles.headerTitle, { color: themeColors.textPrimary }]}>{selectedItemIds.size} Selected</Text>
                         </View>
                         <View style={styles.headerActions}>
                             <TouchableOpacity onPress={deleteSelectedItems} style={styles.iconButton}>
@@ -720,13 +722,13 @@ const GroceryListScreen = ({ user, onLogout, navigation }) => {
                         </View>
                     </View>
                 ) : (
-                    <View style={styles.header}>
+                    <View style={[styles.header, { backgroundColor: themeColors.surface }]}>
                         <View style={styles.headerLeft}>
                             <TouchableOpacity onPress={() => setSideMenuVisible(true)} style={styles.iconButton}>
-                                <MaterialIcons name="menu" size={28} color={colors.textPrimary} />
+                                <MaterialIcons name="menu" size={28} color={themeColors.textPrimary} />
                             </TouchableOpacity>
                             <View style={styles.headerTitleContainer}>
-                                <Text style={styles.headerTitle}>Grocery List</Text>
+                                <Text style={[styles.headerTitle, { color: themeColors.textPrimary }]}>Grocery List</Text>
                             </View>
                         </View>
                         <View style={styles.headerActions}>
@@ -786,16 +788,16 @@ const GroceryListScreen = ({ user, onLogout, navigation }) => {
 
             {/* Stats */}
             <View style={styles.statsContainer}>
-                <View style={styles.statCard}>
-                    <Text style={styles.statNumber}>{pendingItems.length}</Text>
-                    <Text style={styles.statLabel}>Pending</Text>
+                <View style={[styles.statCard, { backgroundColor: themeColors.surface }]}>
+                    <Text style={[styles.statNumber, { color: themeColors.textPrimary }]}>{pendingItems.length}</Text>
+                    <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>Pending</Text>
                 </View>
-                <View style={styles.statCard}>
-                    <Text style={styles.statNumber}>{boughtItems.length}</Text>
-                    <Text style={styles.statLabel}>Bought</Text>
+                <View style={[styles.statCard, { backgroundColor: themeColors.surface }]}>
+                    <Text style={[styles.statNumber, { color: themeColors.textPrimary }]}>{boughtItems.length}</Text>
+                    <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>Bought</Text>
                 </View>
-                <View style={styles.statCard}>
-                    <Text style={styles.statNumber}>{currentListItems.length}</Text>
+                <View style={[styles.statCard, { backgroundColor: themeColors.surface }]}>
+                    <Text style={[styles.statNumber, { color: themeColors.textPrimary }]}>{currentListItems.length}</Text>
                     <Text style={styles.statLabel}>Total</Text>
                 </View>
             </View>
@@ -812,12 +814,14 @@ const GroceryListScreen = ({ user, onLogout, navigation }) => {
                         <TouchableOpacity
                             style={[
                                 styles.filterChip,
-                                selectedCategory === item && styles.filterChipSelected
+                                { borderColor: themeColors.border, backgroundColor: themeColors.surface },
+                                selectedCategory === item && [styles.filterChipSelected, { backgroundColor: themeColors.primary, borderColor: themeColors.primary }]
                             ]}
                             onPress={() => setSelectedCategory(item)}
                         >
                             <Text style={[
                                 styles.filterChipText,
+                                { color: themeColors.textSecondary },
                                 selectedCategory === item && styles.filterChipTextSelected
                             ]}>
                                 {item}
@@ -846,8 +850,8 @@ const GroceryListScreen = ({ user, onLogout, navigation }) => {
                 ListEmptyComponent={
                     <View style={styles.emptyContainer}>
                         <Text style={styles.emptyEmoji}>📝</Text>
-                        <Text style={styles.emptyText}>No items yet</Text>
-                        <Text style={styles.emptySubtext}>
+                        <Text style={[styles.emptyText, { color: themeColors.textPrimary }]}>No items yet</Text>
+                        <Text style={[styles.emptySubtext, { color: themeColors.textSecondary }]}>
                             Tap the + button to add your first item
                         </Text>
                     </View>
@@ -856,7 +860,7 @@ const GroceryListScreen = ({ user, onLogout, navigation }) => {
                     <RefreshControl
                         refreshing={refreshing}
                         onRefresh={onRefresh}
-                        tintColor={colors.primary}
+                        tintColor={themeColors.primary}
                     />
                 }
             />
@@ -865,7 +869,7 @@ const GroceryListScreen = ({ user, onLogout, navigation }) => {
             {
                 !isSelectionMode && (
                     <TouchableOpacity
-                        style={[styles.fab, isRecording && styles.fabRecording]}
+                        style={[styles.fab, { backgroundColor: themeColors.primary }, isRecording && styles.fabRecording]}
                         onPress={() => {
                             if (!isRecording) setModalVisible(true);
                         }}
@@ -937,6 +941,7 @@ const GroceryListScreen = ({ user, onLogout, navigation }) => {
                 onClose={() => setSideMenuVisible(false)}
                 userProfile={userProfile}
                 onNavigateProfile={() => navigation.navigate('Profile')}
+                onNavigateSettings={() => navigation.navigate('Settings')}
                 onLogout={onLogout}
             />
         </View >

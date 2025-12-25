@@ -13,12 +13,14 @@ import {
     ActivityIndicator,
     Image,
 } from 'react-native';
+import { useTheme } from '../context/ThemeContext';
 import { colors, spacing, typography, borderRadius, shadows } from '../styles/theme';
 import { COMMON_ITEMS, units } from '../data/commonItems';
 
 import { getSmartSuggestions } from '../services/aiService';
 
 const AddItemModal = ({ visible, onClose, onAdd, onEdit, initialItem, currentItems }) => {
+    const { isDarkMode, colors: themeColors } = useTheme();
     const [itemName, setItemName] = useState('');
     const [quantity, setQuantity] = useState('1');
     const [unit, setUnit] = useState('pcs');
@@ -194,8 +196,8 @@ const AddItemModal = ({ visible, onClose, onAdd, onEdit, initialItem, currentIte
     };
 
     const renderBrowser = () => (
-        <View style={styles.browserContainer}>
-            <View style={styles.browserHeader}>
+        <View style={[styles.browserContainer, { backgroundColor: themeColors.surface }]}>
+            <View style={[styles.browserHeader, { borderBottomColor: themeColors.border }]}>
                 <TouchableOpacity
                     onPress={() => {
                         if (selectedCategory) {
@@ -207,11 +209,11 @@ const AddItemModal = ({ visible, onClose, onAdd, onEdit, initialItem, currentIte
                     }}
                     style={styles.backButton}
                 >
-                    <Text style={styles.backButtonText}>
+                    <Text style={[styles.backButtonText, { color: themeColors.primary }]}>
                         {selectedCategory ? '← Back' : '← Close'}
                     </Text>
                 </TouchableOpacity>
-                <Text style={styles.browserTitle}>
+                <Text style={[styles.browserTitle, { color: themeColors.textPrimary }]}>
                     {selectedCategory || 'Browse Categories'}
                 </Text>
             </View>
@@ -227,11 +229,11 @@ const AddItemModal = ({ visible, onClose, onAdd, onEdit, initialItem, currentIte
                         // Category Item
                         return (
                             <TouchableOpacity
-                                style={styles.browserItem}
+                                style={[styles.browserItem, { borderBottomColor: themeColors.border }]}
                                 onPress={() => setSelectedCategory(item)}
                             >
-                                <Text style={styles.browserItemText}>{item}</Text>
-                                <Text style={styles.arrow}>›</Text>
+                                <Text style={[styles.browserItemText, { color: themeColors.textPrimary }]}>{item}</Text>
+                                <Text style={[styles.arrow, { color: themeColors.textSecondary }]}>›</Text>
                             </TouchableOpacity>
                         );
                     }
@@ -246,7 +248,7 @@ const AddItemModal = ({ visible, onClose, onAdd, onEdit, initialItem, currentIte
                     return (
                         <View style={styles.browserItemContainer}>
                             <TouchableOpacity
-                                style={[styles.browserItem, isExpanded && styles.browserItemExpanded]}
+                                style={[styles.browserItem, { borderBottomColor: themeColors.border }, isExpanded && styles.browserItemExpanded]}
                                 onPress={() => handleBrowserItemPress(item)}
                             >
                                 <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
@@ -259,23 +261,23 @@ const AddItemModal = ({ visible, onClose, onAdd, onEdit, initialItem, currentIte
                                     ) : (
                                         <Text style={{ fontSize: 20, marginRight: 8 }}>{item.emoji}</Text>
                                     )}
-                                    <Text style={[styles.browserItemText, isExpanded && styles.browserItemTextExpanded, { flex: 1 }]}>
+                                    <Text style={[styles.browserItemText, { color: themeColors.textPrimary }, isExpanded && styles.browserItemTextExpanded, { flex: 1 }]}>
                                         {item.name}
                                     </Text>
                                 </View>
                                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                    {isAdded && <Text style={styles.addedIndicator}>✓ </Text>}
-                                    <Text style={styles.arrow}>{isExpanded ? '▼' : '›'}</Text>
+                                    {isAdded && <Text style={[styles.addedIndicator, { color: themeColors.success }]}>✓ </Text>}
+                                    <Text style={[styles.arrow, { color: themeColors.textSecondary }]}>{isExpanded ? '▼' : '›'}</Text>
                                 </View>
                             </TouchableOpacity>
 
                             {isExpanded && (
-                                <View style={styles.inlineCustomization}>
+                                <View style={[styles.inlineCustomization, { backgroundColor: themeColors.background }]}>
                                     <View style={styles.inlineRow}>
                                         <View style={styles.inlineQuantity}>
-                                            <Text style={styles.inlineLabel}>Qty:</Text>
+                                            <Text style={[styles.inlineLabel, { color: themeColors.textSecondary }]}>Qty:</Text>
                                             <TextInput
-                                                style={styles.inlineInput}
+                                                style={[styles.inlineInput, { backgroundColor: themeColors.surface, color: themeColors.textPrimary, borderColor: themeColors.border }]}
                                                 value={quantity}
                                                 onChangeText={handleQuantityChange}
                                                 keyboardType="decimal-pad"
@@ -344,28 +346,28 @@ const AddItemModal = ({ visible, onClose, onAdd, onEdit, initialItem, currentIte
                     onPress={handleClose}
                 />
 
-                <Animated.View style={[styles.modalContent, { opacity: fadeAnim }]}>
-                    <View style={styles.modalHandle} />
+                <Animated.View style={[styles.modalContent, { opacity: fadeAnim, backgroundColor: themeColors.surface }]}>
+                    <View style={[styles.modalHandle, { backgroundColor: themeColors.border }]} />
 
                     {showBrowser ? renderBrowser() : (
                         <>
                             <View style={styles.headerRow}>
-                                <Text style={styles.modalTitle}>
+                                <Text style={[styles.modalTitle, { color: themeColors.textPrimary }]}>
                                     {initialItem ? 'Edit Grocery Item' : 'Add Grocery Item'}
                                 </Text>
                                 <TouchableOpacity
-                                    style={styles.browseButton}
+                                    style={[styles.browseButton, { backgroundColor: themeColors.background }]}
                                     onPress={() => setShowBrowser(true)}
                                 >
-                                    <Text style={styles.browseButtonText}>📋 Browse</Text>
+                                    <Text style={[styles.browseButtonText, { color: themeColors.textPrimary }]}>📋 Browse</Text>
                                 </TouchableOpacity>
                             </View>
 
                             <View style={styles.inputContainer}>
                                 <TextInput
-                                    style={styles.input}
+                                    style={[styles.input, { backgroundColor: themeColors.background, color: themeColors.textPrimary, borderColor: themeColors.border }]}
                                     placeholder="Enter item name (e.g., Milk, Bread...)"
-                                    placeholderTextColor={colors.textLight}
+                                    placeholderTextColor={themeColors.textLight}
                                     value={itemName}
                                     onChangeText={handleItemNameChange}
                                     autoFocus
@@ -415,11 +417,11 @@ const AddItemModal = ({ visible, onClose, onAdd, onEdit, initialItem, currentIte
                             </View>
 
                             <View style={styles.quantityContainer}>
-                                <Text style={styles.label}>Quantity:</Text>
+                                <Text style={[styles.label, { color: themeColors.textSecondary }]}>Quantity:</Text>
                                 <TextInput
-                                    style={styles.quantityInput}
+                                    style={[styles.quantityInput, { backgroundColor: themeColors.background, color: themeColors.textPrimary, borderColor: themeColors.border }]}
                                     placeholder="1.00"
-                                    placeholderTextColor={colors.textLight}
+                                    placeholderTextColor={themeColors.textLight}
                                     value={quantity}
                                     onChangeText={handleQuantityChange}
                                     keyboardType="decimal-pad"
@@ -433,12 +435,14 @@ const AddItemModal = ({ visible, onClose, onAdd, onEdit, initialItem, currentIte
                                         key={u}
                                         style={[
                                             styles.unitButton,
-                                            unit === u && styles.unitButtonSelected
+                                            { borderColor: themeColors.border, backgroundColor: themeColors.surface },
+                                            unit === u && [styles.unitButtonSelected, { backgroundColor: themeColors.primary, borderColor: themeColors.primary }]
                                         ]}
                                         onPress={() => setUnit(u)}
                                     >
                                         <Text style={[
                                             styles.unitButtonText,
+                                            { color: themeColors.textSecondary },
                                             unit === u && styles.unitButtonTextSelected
                                         ]}>
                                             {u}

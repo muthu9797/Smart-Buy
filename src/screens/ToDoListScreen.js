@@ -16,6 +16,7 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useFocusEffect } from '@react-navigation/native';
+import { useTheme } from '../context/ThemeContext';
 import { colors, spacing, typography, borderRadius, shadows } from '../styles/theme';
 import SideMenu from '../components/SideMenu';
 import AppLauncherModal from '../components/AppLauncherModal';
@@ -32,6 +33,7 @@ import {
 } from '../services/todoService';
 
 const ToDoListScreen = ({ user, navigation }) => {
+    const { isDarkMode, colors: themeColors } = useTheme();
     const [items, setItems] = useState([]);
     const [userProfile, setUserProfile] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -281,6 +283,7 @@ const ToDoListScreen = ({ user, navigation }) => {
             >
                 <View style={[
                     styles.itemCard,
+                    { backgroundColor: themeColors.surface },
                     item.is_completed && styles.itemCardCompleted,
                     isSelected && styles.itemCardSelected
                 ]}>
@@ -301,22 +304,22 @@ const ToDoListScreen = ({ user, navigation }) => {
                             }
                             size={24}
                             color={isMultiSelectMode
-                                ? (isSelected ? colors.primary : colors.textSecondary)
-                                : (item.is_completed ? colors.success : colors.textSecondary)
+                                ? (isSelected ? themeColors.primary : themeColors.textSecondary)
+                                : (item.is_completed ? themeColors.success : themeColors.textSecondary)
                             }
                         />
                     </TouchableOpacity>
 
                     <View style={styles.itemContent}>
-                        <Text style={[styles.itemText, item.is_completed && styles.itemTextCompleted]}>
+                        <Text style={[styles.itemText, { color: themeColors.textPrimary }, item.is_completed && styles.itemTextCompleted]}>
                             {item.text}
                         </Text>
                         <View style={styles.metaRow}>
-                            <Text style={styles.itemMeta}>
+                            <Text style={[styles.itemMeta, { color: themeColors.textSecondary }]}>
                                 Added by {item.created_by_name || 'Unknown'}
                             </Text>
                             {item.is_completed && item.completed_by_name && (
-                                <Text style={styles.completedText}>
+                                <Text style={[styles.completedText, { color: themeColors.success }]}>
                                     • ✅ Done by {item.completed_by_name}
                                 </Text>
                             )}
@@ -328,7 +331,7 @@ const ToDoListScreen = ({ user, navigation }) => {
                             style={styles.deleteButton}
                             onPress={() => handleDelete(item)}
                         >
-                            <MaterialIcons name="delete-outline" size={24} color={colors.error} />
+                            <MaterialIcons name="delete-outline" size={24} color={themeColors.error} />
                         </TouchableOpacity>
                     )}
                 </View>
@@ -338,25 +341,25 @@ const ToDoListScreen = ({ user, navigation }) => {
 
     return (
         <KeyboardAvoidingView
-            style={styles.container}
+            style={[styles.container, { backgroundColor: themeColors.background }]}
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
         >
-            <StatusBar style="auto" />
+            <StatusBar style={isDarkMode ? "light" : "dark"} />
 
             {/* Header */}
-            <View style={styles.header}>
+            <View style={[styles.header, { backgroundColor: themeColors.surface }]}>
                 <View style={styles.headerLeft}>
                     {isMultiSelectMode ? (
                         <TouchableOpacity onPress={exitMultiSelectMode} style={styles.iconButton}>
-                            <MaterialIcons name="close" size={28} color={colors.textPrimary} />
+                            <MaterialIcons name="close" size={28} color={themeColors.textPrimary} />
                         </TouchableOpacity>
                     ) : (
                         <TouchableOpacity onPress={() => setSideMenuVisible(true)} style={styles.iconButton}>
-                            <MaterialIcons name="menu" size={28} color={colors.textPrimary} />
+                            <MaterialIcons name="menu" size={28} color={themeColors.textPrimary} />
                         </TouchableOpacity>
                     )}
-                    <Text style={styles.headerTitle}>
+                    <Text style={[styles.headerTitle, { color: themeColors.textPrimary }]}>
                         {isMultiSelectMode ? `${selectedItems.size} Selected` : 'To-Do List'}
                     </Text>
                 </View>
@@ -392,7 +395,7 @@ const ToDoListScreen = ({ user, navigation }) => {
             {/* List */}
             {loading ? (
                 <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color={colors.primary} />
+                    <ActivityIndicator size="large" color={themeColors.primary} />
                 </View>
             ) : (
                 <FlatList
@@ -403,24 +406,25 @@ const ToDoListScreen = ({ user, navigation }) => {
                     ListEmptyComponent={
                         <View style={styles.emptyContainer}>
                             <Text style={styles.emptyEmoji}>📝</Text>
-                            <Text style={styles.emptyText}>No tasks yet</Text>
+                            <Text style={[styles.emptyText, { color: themeColors.textSecondary }]}>No tasks yet</Text>
                         </View>
                     }
                 />
             )}
 
             {/* Input Area (Bottom) */}
-            <View style={styles.inputWrapper}>
+            <View style={[styles.inputWrapper, { backgroundColor: themeColors.surface, borderTopColor: themeColors.border }]}>
                 <View style={styles.inputContainer}>
                     <TextInput
-                        style={styles.input}
+                        style={[styles.input, { backgroundColor: themeColors.background, color: themeColors.textPrimary, borderColor: themeColors.border }]}
                         placeholder="Add a task..."
+                        placeholderTextColor={themeColors.textSecondary}
                         value={inputText}
                         onChangeText={setInputText}
                         onSubmitEditing={handleAddItem}
                     />
                     <TouchableOpacity
-                        style={styles.addButton}
+                        style={[styles.addButton, { backgroundColor: themeColors.primary }]}
                         onPress={handleAddItem}
                     >
                         <MaterialIcons name="add" size={24} color="#FFF" />
@@ -433,6 +437,7 @@ const ToDoListScreen = ({ user, navigation }) => {
                 onClose={() => setSideMenuVisible(false)}
                 userProfile={userProfile}
                 onNavigateProfile={() => navigation.navigate('Profile')}
+                onNavigateSettings={() => navigation.navigate('Settings')}
                 onLogout={() => { }}
             />
 

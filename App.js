@@ -3,17 +3,20 @@ import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { onAuthChange } from './src/services/authService';
+import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import LoginScreen from './src/screens/LoginScreen';
 import GroceryListScreen from './src/screens/GroceryListScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import ToDoListScreen from './src/screens/ToDoListScreen';
+import SettingsScreen from './src/screens/SettingsScreen';
 import { colors } from './src/styles/theme';
 
 const Stack = createStackNavigator();
 
-export default function App() {
+function AppContent() {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    const { colors: themeColors } = useTheme();
 
     useEffect(() => {
         const unsubscribe = onAuthChange((authUser) => {
@@ -26,8 +29,8 @@ export default function App() {
 
     if (loading) {
         return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={colors.primary} />
+            <View style={[styles.loadingContainer, { backgroundColor: themeColors.background }]}>
+                <ActivityIndicator size="large" color={themeColors.primary} />
             </View>
         );
     }
@@ -66,11 +69,20 @@ export default function App() {
                             />
                         )}
                     </Stack.Screen>
+                    <Stack.Screen name="Settings" component={SettingsScreen} />
                 </Stack.Navigator>
             ) : (
                 <LoginScreen onLoginSuccess={setUser} />
             )}
         </NavigationContainer>
+    );
+}
+
+export default function App() {
+    return (
+        <ThemeProvider>
+            <AppContent />
+        </ThemeProvider>
     );
 }
 

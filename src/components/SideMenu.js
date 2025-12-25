@@ -10,12 +10,14 @@ import {
     Image,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useTheme } from '../context/ThemeContext';
 import { colors, spacing, typography, borderRadius, shadows, getColorForName } from '../styles/theme';
 
 const { width, height } = Dimensions.get('window');
 const MENU_WIDTH = width * 0.75; // Menu takes 75% of screen width
 
-const SideMenu = ({ visible, onClose, userProfile, onNavigateProfile, onLogout }) => {
+const SideMenu = ({ visible, onClose, userProfile, onNavigateProfile, onNavigateSettings, onLogout }) => {
+    const { isDarkMode, colors: themeColors } = useTheme();
     const slideAnim = useRef(new Animated.Value(-MENU_WIDTH)).current; // Start off-screen left
     const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -66,41 +68,46 @@ const SideMenu = ({ visible, onClose, userProfile, onNavigateProfile, onLogout }
             {/* Menu Drawer */}
             <Animated.View style={[
                 styles.drawer,
-                { transform: [{ translateX: slideAnim }] }
+                { transform: [{ translateX: slideAnim }], backgroundColor: themeColors.surface }
             ]}>
                 {/* Header / User Info */}
-                <View style={styles.menuHeader}>
+                <View style={[styles.menuHeader, { borderBottomColor: themeColors.border }]}>
                     <View style={[styles.avatar, { backgroundColor: avatarColor }]}>
                         <Text style={styles.avatarText}>
                             {userProfile?.fullName ? userProfile.fullName.charAt(0).toUpperCase() : (userProfile?.role === 'wife' ? 'S' : (userProfile?.role === 'husband' ? 'H' : '?'))}
                         </Text>
                     </View>
                     <View style={styles.userInfo}>
-                        <Text style={styles.userName}>
+                        <Text style={[styles.userName, { color: themeColors.textPrimary }]}>
                             {userProfile?.fullName || (userProfile?.role === 'wife' ? 'She' : (userProfile?.role === 'husband' ? 'He' : 'Guest'))}
                         </Text>
-                        <Text style={styles.userFamily}>Group: {userProfile?.familyId}</Text>
+                        <Text style={[styles.userFamily, { color: themeColors.textSecondary }]}>Group: {userProfile?.familyId}</Text>
                     </View>
                 </View>
 
                 {/* Navigation Items */}
                 <View style={styles.menuItems}>
                     <TouchableOpacity style={styles.menuItem} onPress={() => { onClose(); onNavigateProfile(); }}>
-                        <MaterialIcons name="person" size={24} color={colors.textPrimary} style={styles.menuIcon} />
-                        <Text style={styles.menuItemText}>Profile</Text>
+                        <MaterialIcons name="person" size={24} color={themeColors.textPrimary} style={styles.menuIcon} />
+                        <Text style={[styles.menuItemText, { color: themeColors.textPrimary }]}>Profile</Text>
                     </TouchableOpacity>
 
-                    <View style={styles.divider} />
+                    <TouchableOpacity style={styles.menuItem} onPress={() => { onClose(); onNavigateSettings && onNavigateSettings(); }}>
+                        <MaterialIcons name="settings" size={24} color={themeColors.textPrimary} style={styles.menuIcon} />
+                        <Text style={[styles.menuItemText, { color: themeColors.textPrimary }]}>Settings</Text>
+                    </TouchableOpacity>
+
+                    <View style={[styles.divider, { backgroundColor: themeColors.border }]} />
 
                     <TouchableOpacity style={styles.menuItem} onPress={() => { onClose(); onLogout(); }}>
-                        <MaterialIcons name="logout" size={24} color={colors.error} style={styles.menuIcon} />
-                        <Text style={[styles.menuItemText, { color: colors.error }]}>Log Out</Text>
+                        <MaterialIcons name="logout" size={24} color={themeColors.error} style={styles.menuIcon} />
+                        <Text style={[styles.menuItemText, { color: themeColors.error }]}>Log Out</Text>
                     </TouchableOpacity>
                 </View>
 
                 {/* Footer */}
-                <View style={styles.footer}>
-                    <Text style={styles.versionText}>Grocery App v1.0</Text>
+                <View style={[styles.footer, { borderTopColor: themeColors.border }]}>
+                    <Text style={[styles.versionText, { color: themeColors.textLight }]}>Grocery App v1.0</Text>
                 </View>
 
             </Animated.View >
