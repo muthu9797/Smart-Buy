@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Image } from 'react-native';
 import { colors, spacing, typography, borderRadius, shadows, getColorForName } from '../styles/theme';
 
 const GroceryItem = ({ item, onToggleBought, onDelete, currentUserId, userRole, isSelectionMode, isSelected }) => {
@@ -84,12 +84,29 @@ const GroceryItem = ({ item, onToggleBought, onDelete, currentUserId, userRole, 
 
                         {/* Item details */}
                         <View style={styles.itemDetails}>
-                            <Text style={[
+                            <View style={[
                                 styles.itemName,
-                                item.isBought && styles.itemNameBought
+                                item.isBought && styles.itemNameBought,
+                                { flexDirection: 'row', alignItems: 'center' }
                             ]}>
-                                {item.emoji} {item.name}
-                            </Text>
+                                {item.emoji === ':sharpener:' ? (
+                                    <View style={{ width: 24, height: 24, justifyContent: 'center', alignItems: 'center', marginRight: 4 }}>
+                                        <Image
+                                            source={require('../../assets/sharpener.png')}
+                                            style={{ width: 20, height: 20 }}
+                                            resizeMode="contain"
+                                        />
+                                    </View>
+                                ) : (
+                                    <Text style={{ marginRight: 4 }}>{item.emoji}</Text>
+                                )}
+                                <Text style={[
+                                    styles.itemNameText,
+                                    item.isBought && styles.itemNameBought
+                                ]}>
+                                    {item.name}
+                                </Text>
+                            </View>
                             <Text style={styles.quantityText}>Qty: {item.quantity}</Text>
                             <View style={styles.metaRow}>
                                 <Text style={styles.itemMeta}>
@@ -163,10 +180,12 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     itemName: {
+        marginBottom: 4,
+    },
+    itemNameText: {
         fontSize: typography.fontSizeMedium,
         fontWeight: typography.fontWeightMedium,
         color: colors.textPrimary,
-        marginBottom: 4,
     },
     itemNameBought: {
         textDecorationLine: 'line-through',

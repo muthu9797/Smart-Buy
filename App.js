@@ -6,6 +6,7 @@ import { onAuthChange } from './src/services/authService';
 import LoginScreen from './src/screens/LoginScreen';
 import GroceryListScreen from './src/screens/GroceryListScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
+import ToDoListScreen from './src/screens/ToDoListScreen';
 import { colors } from './src/styles/theme';
 
 const Stack = createStackNavigator();
@@ -54,6 +55,14 @@ export default function App() {
                                 {...props}
                                 user={user}
                                 onLogout={() => setUser(null)}
+                            />
+                        )}
+                    </Stack.Screen>
+                    <Stack.Screen name="ToDoList">
+                        {(props) => (
+                            <ToDoListScreen
+                                {...props}
+                                user={user}
                             />
                         )}
                     </Stack.Screen>

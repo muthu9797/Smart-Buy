@@ -1,4 +1,39 @@
 export const COMMON_ITEMS = [
+    // Nuts & Dry Fruits
+    { name: 'Almonds', category: 'Nuts', emoji: '🌰' },
+    { name: 'Cashews', category: 'Nuts', emoji: '🥜' },
+    { name: 'Walnuts', category: 'Nuts', emoji: '🌰' },
+    { name: 'Pistachios', category: 'Nuts', emoji: '🥜' },
+    { name: 'Peanuts', category: 'Nuts', emoji: '🥜' },
+    { name: 'Raisins', category: 'Nuts', emoji: '🍇' },
+    { name: 'Dates', category: 'Nuts', emoji: '🌴' },
+    { name: 'Chia Seeds', category: 'Nuts', emoji: '🌱' },
+    { name: 'Flax Seeds', category: 'Nuts', emoji: '🌱' },
+    { name: 'Pumpkin Seeds', category: 'Nuts', emoji: '🎃' },
+    { name: 'Sunflower Seeds', category: 'Nuts', emoji: '🌻' },
+    { name: 'Sesame Seeds (Ellu)', category: 'Nuts', emoji: '⚫' },
+    { name: 'Lotus Seeds (Makhana)', category: 'Nuts', emoji: '⚪' },
+    { name: 'Melon Seeds (Magaz)', category: 'Nuts', emoji: '🍈' },
+    { name: 'Basil Seeds (Sabja)', category: 'Nuts', emoji: '⚫' },
+
+    // Stationery
+    { name: 'Notebook', category: 'Stationery', emoji: '📓' },
+    { name: 'Pen', category: 'Stationery', emoji: '🖊️' },
+    { name: 'Pencil', category: 'Stationery', emoji: '✏️' },
+    { name: 'Eraser', category: 'Stationery', emoji: '🧼' },
+    { name: 'Sharpener', category: 'Stationery', emoji: ':sharpener:' },
+    { name: 'Glue Stick', category: 'Stationery', emoji: '🧴' },
+    { name: 'Scissors', category: 'Stationery', emoji: '✂️' },
+    { name: 'Tape', category: 'Stationery', emoji: '📼' },
+    { name: 'Stapler', category: 'Stationery', emoji: '📎' },
+    { name: 'Paper Clips', category: 'Stationery', emoji: '📎' },
+    { name: 'Post-it Notes', category: 'Stationery', emoji: '📝' },
+    { name: 'Highlighter', category: 'Stationery', emoji: '🖍️' },
+    { name: 'Files/Folders', category: 'Stationery', emoji: '📂' },
+    { name: 'A4 Paper', category: 'Stationery', emoji: '📄' },
+    { name: 'Calculator', category: 'Stationery', emoji: '🧮' },
+
+    // Existing Items...
     // South Indian Vegetables
     { name: 'Small Onions (Chinna Vengayam)', emoji: '🧅', category: 'Vegetables' },
     { name: 'Big Onions', emoji: '🧅', category: 'Vegetables' },

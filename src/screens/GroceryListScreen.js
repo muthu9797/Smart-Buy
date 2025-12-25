@@ -18,6 +18,7 @@ import ListSelectorModal from '../components/ListSelectorModal';
 import NotificationBadge from '../components/NotificationBadge';
 import ListOptionsModal from '../components/ListOptionsModal';
 import SideMenu from '../components/SideMenu';
+import AppLauncherModal from '../components/AppLauncherModal';
 import CompleteProfileModal from '../components/CompleteProfileModal';
 
 import {
@@ -38,6 +39,8 @@ import {
     sendItemBoughtNotification,
     addNotificationReceivedListener,
 } from '../services/notificationService';
+import { Audio } from 'expo-av';
+import { processVoiceCommand } from '../services/aiService';
 import { colors, spacing, typography, borderRadius, shadows } from '../styles/theme';
 import { COMMON_ITEMS } from '../data/commonItems';
 
@@ -57,6 +60,7 @@ const GroceryListScreen = ({ user, onLogout, navigation }) => {
 
     const [optionsModalVisible, setOptionsModalVisible] = useState(false);
     const [sideMenuVisible, setSideMenuVisible] = useState(false);
+    const [appLauncherVisible, setAppLauncherVisible] = useState(false);
     const [isSelectionMode, setIsSelectionMode] = useState(false);
     const [selectedItemIds, setSelectedItemIds] = useState(new Set());
 
@@ -121,7 +125,7 @@ const GroceryListScreen = ({ user, onLogout, navigation }) => {
                 unsubscribe = subscribeToGroceryList(
                     userProfile.familyId,
                     (updatedItems) => {
-                        setItems(updatedItems);
+                        setItems(sortItems(updatedItems));
                         setLoading(false);
                         setRefreshing(false);
                     },
@@ -223,7 +227,7 @@ const GroceryListScreen = ({ user, onLogout, navigation }) => {
 
         const performAddItem = async () => {
             // Optimistic update
-            const tempId = 'temp-' + Date.now();
+            const tempId = 'temp-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5);
             const newItem = {
                 id: tempId,
                 name: itemName,
@@ -468,6 +472,103 @@ const GroceryListScreen = ({ user, onLogout, navigation }) => {
         setTimeout(() => setRefreshing(false), 1000);
     };
 
+    // Voice Recording State using Ref for stability
+    const recordingRef = React.useRef(null);
+    const [isRecording, setIsRecording] = useState(false);
+    const [permissionResponse, requestPermission] = Audio.usePermissions();
+
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            if (recordingRef.current) {
+                recordingRef.current.stopAndUnloadAsync();
+            }
+        };
+    }, []);
+
+    const startRecording = async () => {
+        try {
+            if (permissionResponse?.status !== 'granted') {
+                console.log('Requesting permission..');
+                const perm = await requestPermission();
+                if (perm.status !== 'granted') {
+                    Alert.alert('Permission needed', 'Microphone permission is required for voice commands.');
+                    return;
+                }
+            }
+
+            await Audio.setAudioModeAsync({
+                allowsRecordingIOS: true,
+                playsInSilentModeIOS: true,
+                staysActiveInBackground: false,
+                shouldDuckAndroid: true,
+                playThroughEarpieceAndroid: false,
+            });
+
+            console.log('Starting recording..');
+
+            // Use the default HIGH_QUALITY preset for maximum compatibility
+            const { recording } = await Audio.Recording.createAsync(
+                Audio.RecordingOptionsPresets.HIGH_QUALITY
+            );
+
+            recordingRef.current = recording;
+            setIsRecording(true);
+            console.log('Recording started');
+        } catch (err) {
+            console.error('Failed to start recording', err);
+            setIsRecording(false);
+            Alert.alert('Error', 'Could not start recording.');
+        }
+    };
+
+    const stopRecording = async () => {
+        console.log('Stopping recording..');
+        setIsRecording(false); // Update UI immediately
+
+        const recording = recordingRef.current;
+        if (!recording) {
+            console.log('No active recording ref found');
+            return;
+        }
+
+        try {
+            await recording.stopAndUnloadAsync();
+            const uri = recording.getURI();
+            console.log('Recording stopped and stored at', uri);
+            recordingRef.current = null; // Clear ref
+
+            // Process with Gemini
+            await handleVoiceInput(uri);
+        } catch (error) {
+            console.error('Failed to stop recording', error);
+            recordingRef.current = null;
+        }
+    };
+
+    const handleVoiceInput = async (uri) => {
+        setLoading(true); // Show global loading or a specific "Processing..." state
+        try {
+            const items = await processVoiceCommand(uri);
+            console.log('Gemini extracted items:', items);
+
+            if (items && items.length > 0) {
+                // Add items one by one
+                for (const item of items) {
+                    await handleAddItem(item.name, item.quantity || '1 pcs', item.emoji || '🛒');
+                }
+                Alert.alert('Success', `Added ${items.length} items from voice!`);
+            } else {
+                Alert.alert('Voice Command', 'Could not understand the items. Please try again or speak closer to the mic.');
+            }
+        } catch (error) {
+            console.error('Voice processing error:', error);
+            Alert.alert('Error', 'Failed to process voice command.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     // Helper to get category for an item
     const getCategory = (itemName) => {
         const match = COMMON_ITEMS.find(
@@ -625,7 +726,7 @@ const GroceryListScreen = ({ user, onLogout, navigation }) => {
                                 <MaterialIcons name="menu" size={28} color={colors.textPrimary} />
                             </TouchableOpacity>
                             <View style={styles.headerTitleContainer}>
-                                <Text style={styles.headerTitle}>🛒 Grocery List</Text>
+                                <Text style={styles.headerTitle}>Grocery List</Text>
                             </View>
                         </View>
                         <View style={styles.headerActions}>
@@ -650,16 +751,38 @@ const GroceryListScreen = ({ user, onLogout, navigation }) => {
                                 </TouchableOpacity>
                             )}
 
-                            <TouchableOpacity onPress={() => setNotificationCount(0)} style={styles.iconButton}>
+                            {/* <TouchableOpacity onPress={() => setNotificationCount(0)} style={styles.iconButton}>
                                 <View>
                                     <Text style={styles.actionIcon}>🔔</Text>
                                     <NotificationBadge count={notificationCount} />
                                 </View>
+                            </TouchableOpacity> */}
+                            <TouchableOpacity
+                                style={styles.iconButton}
+                                onPress={() => setAppLauncherVisible(true)}
+                            >
+                                <MaterialIcons name="grid-view" size={24} color={colors.textPrimary} />
                             </TouchableOpacity>
                         </View>
                     </View>
                 )
             }
+
+            {/* App Launcher Modal */}
+            <AppLauncherModal
+                visible={appLauncherVisible}
+                onClose={() => setAppLauncherVisible(false)}
+                onNavigate={(appId) => {
+                    console.log('Navigate to app:', appId);
+                    if (appId === 'grocery') {
+                        // Already here
+                    } else if (appId === 'todo') {
+                        navigation.navigate('ToDoList');
+                    } else if (appId === 'chat') {
+                        Alert.alert('Coming Soon', 'Group Chat feature is currently under development.');
+                    }
+                }}
+            />
 
             {/* Stats */}
             <View style={styles.statsContainer}>
@@ -707,7 +830,7 @@ const GroceryListScreen = ({ user, onLogout, navigation }) => {
             {/* Grocery List */}
             <FlatList
                 data={filteredItems}
-                keyExtractor={(item) => item.id}
+                keyExtractor={(item) => item.id || `fallback-${Math.random()}`}
                 renderItem={({ item }) => (
                     <GroceryItem
                         item={item}
@@ -742,10 +865,23 @@ const GroceryListScreen = ({ user, onLogout, navigation }) => {
             {
                 !isSelectionMode && (
                     <TouchableOpacity
-                        style={styles.fab}
-                        onPress={() => setModalVisible(true)}
+                        style={[styles.fab, isRecording && styles.fabRecording]}
+                        onPress={() => {
+                            if (!isRecording) setModalVisible(true);
+                        }}
+                        onLongPress={startRecording}
+                        onPressOut={() => {
+                            // Only stop if we actually started via long press
+                            if (isRecording) stopRecording();
+                        }}
+                        delayLongPress={300} // Shorten delay for better feel
+                        activeOpacity={0.7}
                     >
-                        <Text style={styles.fabText}>+</Text>
+                        <MaterialIcons
+                            name={isRecording ? "mic" : "add"}
+                            size={32}
+                            color="#FFF"
+                        />
                     </TouchableOpacity>
                 )
             }
@@ -1005,6 +1141,10 @@ const styles = StyleSheet.create({
     },
     headerTitleContainer: {
         marginLeft: spacing.md,
+    },
+    fabRecording: {
+        backgroundColor: colors.error, // Red to indicate recording
+        transform: [{ scale: 1.2 }],
     },
 });
 

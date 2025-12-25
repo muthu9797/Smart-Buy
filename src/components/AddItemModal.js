@@ -10,9 +10,13 @@ import {
     Platform,
     Animated,
     FlatList,
+    ActivityIndicator,
+    Image,
 } from 'react-native';
 import { colors, spacing, typography, borderRadius, shadows } from '../styles/theme';
 import { COMMON_ITEMS, units } from '../data/commonItems';
+
+import { getSmartSuggestions } from '../services/aiService';
 
 const AddItemModal = ({ visible, onClose, onAdd, onEdit, initialItem, currentItems }) => {
     const [itemName, setItemName] = useState('');
@@ -22,10 +26,15 @@ const AddItemModal = ({ visible, onClose, onAdd, onEdit, initialItem, currentIte
     const [showBrowser, setShowBrowser] = useState(false);
     const [expandedItem, setExpandedItem] = useState(null);
     const [suggestions, setSuggestions] = useState([]);
+    const [aiSuggestions, setAiSuggestions] = useState([]); // New state for AI
+    const [isLoadingAI, setIsLoadingAI] = useState(false); // Loading state
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [feedbackItemId, setFeedbackItemId] = useState(null);
     const fadeAnim = React.useRef(new Animated.Value(0)).current;
+
+    // Debounce timer ref
+    const debounceTimer = React.useRef(null);
 
     const categories = [...new Set(COMMON_ITEMS.map(item => item.category))];
 
@@ -58,6 +67,7 @@ const AddItemModal = ({ visible, onClose, onAdd, onEdit, initialItem, currentIte
             setSelectedCategory(null);
             setExpandedItem(null);
             setFeedbackItemId(null);
+            setAiSuggestions([]);
         }
     }, [visible, initialItem]);
 
@@ -70,19 +80,44 @@ const AddItemModal = ({ visible, onClose, onAdd, onEdit, initialItem, currentIte
         setSelectedCategory(null);
         setExpandedItem(null);
         setFeedbackItemId(null);
+        setAiSuggestions([]);
     };
 
     const handleItemNameChange = (text) => {
         setItemName(text);
+
+        // Clear previous timer
+        if (debounceTimer.current) clearTimeout(debounceTimer.current);
+
         if (text.length > 0) {
+            // 1. Local Suggestions (Immediate)
             const filtered = COMMON_ITEMS.filter(item =>
                 item.name.toLowerCase().includes(text.toLowerCase())
             );
             setSuggestions(filtered);
             setShowSuggestions(true);
+
+            // 2. AI Suggestions (Debounced)
+            if (text.length > 2) {
+                setIsLoadingAI(true);
+                debounceTimer.current = setTimeout(async () => {
+                    const smartSuggestions = await getSmartSuggestions(text);
+                    // Filter out items that are already in local suggestions to avoid duplicates
+                    const newAiSuggestions = smartSuggestions.filter(aiItem =>
+                        !filtered.some(local => local.name.toLowerCase() === aiItem.name.toLowerCase())
+                    );
+                    setAiSuggestions(newAiSuggestions);
+                    setIsLoadingAI(false);
+                }, 800); // 800ms delay
+            } else {
+                setAiSuggestions([]);
+                setIsLoadingAI(false);
+            }
         } else {
             setSuggestions([]);
+            setAiSuggestions([]);
             setShowSuggestions(false);
+            setIsLoadingAI(false);
         }
     };
 
@@ -110,11 +145,20 @@ const AddItemModal = ({ visible, onClose, onAdd, onEdit, initialItem, currentIte
         setIsSubmitting(true);
         const finalQuantity = `${quantity} ${unit}`;
 
-        // Find emoji for the item
+        // Find emoji for the item (check local first, then AI, then default)
+        let emoji = '🛒';
         const matchedItem = COMMON_ITEMS.find(item =>
             item.name.toLowerCase() === itemName.trim().toLowerCase()
         );
-        const emoji = matchedItem ? matchedItem.emoji : '🛒';
+
+        if (matchedItem) {
+            emoji = matchedItem.emoji;
+        } else {
+            const matchedAI = aiSuggestions.find(item =>
+                item.name.toLowerCase() === itemName.trim().toLowerCase()
+            );
+            if (matchedAI) emoji = matchedAI.emoji;
+        }
 
         if (initialItem) {
             await onEdit(initialItem.id, itemName.trim(), finalQuantity, emoji);
@@ -131,10 +175,6 @@ const AddItemModal = ({ visible, onClose, onAdd, onEdit, initialItem, currentIte
             setTimeout(() => {
                 setFeedbackItemId(null);
             }, 1500);
-            // Optional: Reset quantity to default for next add, or keep it? 
-            // Let's keep it as is, user might want to add another item of same quantity? 
-            // Actually, usually in browsing you move to next item. 
-            // Let's not reset the form entirely, just let them continue.
         } else {
             resetForm();
             onClose();
@@ -209,9 +249,20 @@ const AddItemModal = ({ visible, onClose, onAdd, onEdit, initialItem, currentIte
                                 style={[styles.browserItem, isExpanded && styles.browserItemExpanded]}
                                 onPress={() => handleBrowserItemPress(item)}
                             >
-                                <Text style={[styles.browserItemText, isExpanded && styles.browserItemTextExpanded]}>
-                                    {item.emoji} {item.name}
-                                </Text>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                                    {item.emoji === ':sharpener:' ? (
+                                        <Image
+                                            source={require('../../assets/sharpener.png')}
+                                            style={{ width: 22, height: 22, marginRight: 8 }}
+                                            resizeMode="contain"
+                                        />
+                                    ) : (
+                                        <Text style={{ fontSize: 20, marginRight: 8 }}>{item.emoji}</Text>
+                                    )}
+                                    <Text style={[styles.browserItemText, isExpanded && styles.browserItemTextExpanded, { flex: 1 }]}>
+                                        {item.name}
+                                    </Text>
+                                </View>
                                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                                     {isAdded && <Text style={styles.addedIndicator}>✓ </Text>}
                                     <Text style={styles.arrow}>{isExpanded ? '▼' : '›'}</Text>
@@ -320,24 +371,44 @@ const AddItemModal = ({ visible, onClose, onAdd, onEdit, initialItem, currentIte
                                     autoFocus
                                     returnKeyType="next"
                                 />
-                                {showSuggestions && suggestions.length > 0 && (
+                                {(showSuggestions || aiSuggestions.length > 0) && (
                                     <View style={styles.suggestionsContainer}>
                                         <FlatList
-                                            data={suggestions}
+                                            data={[...suggestions, ...aiSuggestions]}
                                             keyExtractor={(item) => item.name}
                                             keyboardShouldPersistTaps="handled"
-                                            renderItem={({ item }) => (
-                                                <TouchableOpacity
-                                                    style={styles.suggestionItem}
-                                                    onPress={() => handleSuggestionPress(item)}
-                                                >
-                                                    <Text style={styles.suggestionText}>
-                                                        <Text style={styles.suggestionEmoji}>{item.emoji} </Text>
-                                                        {item.name}
-                                                    </Text>
-                                                </TouchableOpacity>
-                                            )}
+                                            renderItem={({ item }) => {
+                                                const isAI = !COMMON_ITEMS.some(c => c.name === item.name);
+                                                return (
+                                                    <TouchableOpacity
+                                                        style={styles.suggestionItem}
+                                                        onPress={() => handleSuggestionPress(item)}
+                                                    >
+                                                        <View style={styles.suggestionTextContainer}>
+                                                            {item.emoji === ':sharpener:' ? (
+                                                                <Image
+                                                                    source={require('../../assets/sharpener.png')}
+                                                                    style={{ width: 20, height: 20, marginRight: 8 }}
+                                                                    resizeMode="contain"
+                                                                />
+                                                            ) : (
+                                                                <Text style={styles.suggestionEmoji}>{item.emoji} </Text>
+                                                            )}
+                                                            <Text style={styles.suggestionTextInner}>
+                                                                {item.name}
+                                                            </Text>
+                                                        </View>
+                                                        {isAI && <Text style={styles.aiBadge}>✨ Gemini</Text>}
+                                                    </TouchableOpacity>
+                                                );
+                                            }}
                                             style={styles.suggestionsList}
+                                            ListFooterComponent={isLoadingAI ? (
+                                                <View style={styles.aiLoading}>
+                                                    <ActivityIndicator size="small" color={colors.primary} />
+                                                    <Text style={styles.aiLoadingText}>Gemini is thinking...</Text>
+                                                </View>
+                                            ) : null}
                                         />
                                     </View>
                                 )}
@@ -472,10 +543,44 @@ const styles = StyleSheet.create({
         padding: spacing.md,
         borderBottomWidth: 1,
         borderBottomColor: colors.border,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    suggestionTextContainer: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    suggestionTextInner: {
+        fontSize: typography.fontSizeMedium,
+        color: colors.textPrimary,
     },
     suggestionText: {
         fontSize: typography.fontSizeMedium,
         color: colors.textPrimary,
+        flex: 1,
+    },
+    aiBadge: {
+        fontSize: 10,
+        color: colors.primary,
+        fontWeight: 'bold',
+        backgroundColor: colors.surfaceAlt,
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 4,
+        overflow: 'hidden',
+    },
+    aiLoading: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: spacing.md,
+        justifyContent: 'center',
+        gap: spacing.sm,
+    },
+    aiLoadingText: {
+        color: colors.textSecondary,
+        fontSize: typography.fontSizeSmall,
     },
     quantityContainer: {
         flexDirection: 'row',
